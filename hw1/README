@@ -1,0 +1,14 @@
+# Homework 1: NDC to RGB Shader
+
+Made by Drew Smith. This is a very simple one-liner shader, using code from ex01 as a starting point.
+
+Key bindings:
+
+- m : Toggle shader
+- o : Change objects
+- arrows : Look around
+- =, - : Zoom in, out
+- 0 : Reset view angle
+- ESC : Exit
+
+Time to complete: Literally a few minutes for the shader program. I spent a couple hours playing around with the library and changing some features.
