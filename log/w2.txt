@@ -1,0 +1,20 @@
+# Homework 2 review
+
+I successfully implemented two different normal mapped textures, which I am
+happy about. I did not achieve my stretch goal, but the normal mapping was
+more involved than I had anticipated, since I had to implement TNBs for each
+vertex and ended up drawing the cube instead in a VAO to pass these as vertex
+attributes. I remade lighting to use the TNB matrix and then implemented the
+mapped normals by thinking of the texture as a surface z=f(x,y) which can be
+re-expressed as z-f(x,y)=constant. Then the gradient of this function becomes
+(-df/dx, -df/dy, 1) which can be rotated with the TNB matrix to produce the
+intended result.
+
+# Homework 3 goals (Performance)
+
+My goal for homework 3 is to explore the performance of different rendering
+techniques. Specifically, I want to create an object loader that uses a VAO
+and contend it with Vlakkies' DisplayList object loader. I would also like to
+see how the loader compares when GLSL 400 compatibility vs 400 core vs 120
+compares.
+

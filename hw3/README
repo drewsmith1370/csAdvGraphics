@@ -1,0 +1,16 @@
+# Homework 2: Procedurally Generated Water Normal Shader
+
+Made by Drew Smith. This Shader uses texture coordinates to generate a normal map with sinusoids, then orients them to the world using the TNB vectors at each vertex. The second shader shows a normal mapping demo with a ripple effect. Third shader is basic lighting using TNB normal.
+
+Key bindings:
+
+- Space : Pause/Unpause
+- L : Toggle light rotation
+- m : Toggle shader
+- o : Change objects
+- arrows : Look around
+- =, - : Zoom in, out
+- 0 : Reset view angle
+- ESC : Exit
+
+Time to complete: 7-8 hours; the holiday helped a lot.

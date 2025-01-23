@@ -1,0 +1,13 @@
+# Week 1: NDC to RGB
+
+I think I met the goals. I didn't realize the potential for using default
+shaders from OpenGL, but I got my shaders down to one line each. I feel like I
+learned from this.
+
+# Homework 2 goals:
+
+For this homework (procedurally generated textures), I want to implement
+normal mapping. I think making a working normal map system to display waves
+and ripples will be sufficient, and as a stretch goal, I will add a skybox and
+basic reflections to the texture.
+
