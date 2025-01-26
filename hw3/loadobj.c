@@ -272,6 +272,8 @@ int LoadOBJ(const char* file)
 
    // Reset materials
    mtl = NULL;
+   Nmtl = 0;// Reset materials
+   mtl = NULL;
    Nmtl = 0;
 
    //  Start new displaylist
