@@ -255,32 +255,6 @@ void handleInputs() {
    Projection(fov,asp,dim);
 }
 
-
-//
-// Helper function to create a VAO with static draw for storing an object, using vdata for vbo and idata for ibo
-//
-GLuint CreateStaticVertexBuffer(int vsize, void* vdata, int isize, void* idata) {
-    // Combine as buffer array object
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    // Make vertex buffer object
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vsize, vdata, GL_STATIC_DRAW);
-
-    // Make Index buffer object
-    GLuint ibo;
-    glGenBuffers(1, &ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, isize, idata, GL_STATIC_DRAW);
-
-    // Return name of vao
-    return vao;
-}
-
 int CreateObject(int shader, int vsize, void* vdata, int isize, void* idata) {
 	GLuint name = CreateStaticVertexBuffer(vsize,vdata,isize,idata);
 
@@ -314,12 +288,14 @@ int main(int argc, char** argv) {
 
 	shader[0] = CreateShaderProg("light.vert","light.frag");
 	objects[0] = CreateObject(shader[0],sizeof(CubeVertices),CubeVertices,sizeof(CubeIndices),CubeIndices);
-	lists[0] = LoadOBJ("tyra.obj");
+	// lists[0] = LoadOBJ("tyra.obj");
 	ErrCheck("init");
 
-	ObjToVao("tyra.obj");
+	glFinish();
+	ObjToVao("teapot.obj",shader[0]);
+	ErrCheck("obj loader");
 
-	// // Main loop
+	// Main loop
 	// while(!glfwWindowShouldClose(window)) {
 	// 	handleInputs();
 	// 	display(window);

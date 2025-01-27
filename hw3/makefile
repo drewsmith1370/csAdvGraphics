@@ -16,7 +16,7 @@ CFLG=-O3 -Wall -Wno-deprecated-declarations  -DUSEGLEW
 LIBS=-lglfw -lglew -framework Cocoa -framework OpenGL -framework IOKit
 #  Linux/Unix/Solaris
 else
-CFLG=-O3 -Wall
+CFLG=-g -Wall
 LIBS=-lglfw -lGLU -lGL -lm
 endif
 #  OSX/Linux/Unix/Solaris

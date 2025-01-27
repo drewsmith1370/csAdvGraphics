@@ -86,7 +86,8 @@ void Icosahedron(float x,float y,float z , float r, float th,float ph , int tex)
 void Teapot(float x,float y,float z,float r,float th,float ph,int n,int tex);
 
 // ObjToVao - Drew Smith
-int ObjToVao(char* file);
+GLuint CreateStaticVertexBuffer(int vsize, void* vdata, int isize, void* idata);
+int ObjToVao(char* file, int shader);
 
 #include "mat4.h"
 
