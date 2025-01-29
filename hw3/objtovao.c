@@ -111,14 +111,17 @@ static void countBufferSizes(FILE* f, int* nv, int* ni) {
 //    to   : points to address to write to
 //    n    : how many coordinates to read
 //
-static void readCoord(char* from, GLenum to, GLsizeiptr offset, int n) {
+static void readCoord(char* from, GLenum to, GLintptr offset, int n) {
     float temp[3];
     for (int i=0;i<n;i++) {
         char* str = getword(&from);
         if (!str)  Fatal("Premature EOL reading %d floats\n",n);
         if (sscanf(str,"%f",temp+i)!=1) Fatal("Error reading float %d\nString: %s\n",i,str);
     }
-    glBufferSubData(to,offset,n,temp);
+    printf("%.1f %.1f %.1f || ",temp[0],temp[1],temp[2]);
+    glBufferSubData(to,offset,sizeof(float[3]),temp);
+
+    printf("offset: %d\n",offset);
 }
 
 //
@@ -146,7 +149,7 @@ GLuint CreateStaticVertexBuffer(int vsize, void* vdata, int isize, void* idata) 
     return vao;
 }
 
-int ObjToVao(char* file, int shader) {
+int ObjToVao(GLuint* vao, char* file, int shader) {
 	// int  Nv,Nn,Nt;  //  Number of vertex, normal and textures
 	// int  Mv,Mn,Mt;  //  Maximum vertex, normal and textures
 	// float* V;       //  Array of vertexes
@@ -154,6 +157,7 @@ int ObjToVao(char* file, int shader) {
 	// float* T;       //  Array if textures coordinates
 	// char*  line;    //  Line pointer
 	// char*  str;     //  String pointer
+    if (!vao) Fatal("Error: vao ptr is NULL\n");
 
     //  Open file
     FILE* f = fopen(file,"r");
@@ -164,28 +168,25 @@ int ObjToVao(char* file, int shader) {
     countBufferSizes(f,&Nv,&Ni);
 
     // Generate buffers
-    // Get VAO name
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    // Get VAO name if not specified
+    if (!(*vao)) glGenVertexArrays(1, vao);
+    glBindVertexArray(*vao);
 
     // Make vertex buffer object
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex_t[Nv]), NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 8*4*Nv, NULL, GL_DYNAMIC_DRAW);
 
     // Make Index buffer object
     GLuint ibo;
     glGenBuffers(1, &ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int[Ni]), NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int[Ni]), NULL, GL_DYNAMIC_DRAW);
     
 
     // Reserve space for vbo and ibo
-    int Indices[1024];
-    // if (!Indices) 
-    //     Fatal("Failes to malloc buffers");
+    int Indices[1024]; // I was mallocing here originally
 
     //  Read vertexes and facets
     int v_idx = 0;
@@ -201,13 +202,15 @@ int ObjToVao(char* file, int shader) {
         //  Vertex coordinates (always 3)
         if (line[0]=='v' && line[1]==' ')
         {
-            readCoord(&line[2],GL_ARRAY_BUFFER,sizeof(Vertex_t)*v_idx+offsetof(Vertex_t,v),3);
+            readCoord(&line[2],GL_ARRAY_BUFFER,(v_idx/3)*4*8,3);
+            ErrCheck("read vertex");
             v_idx += 3;
         }
         //  Normal coordinates (always 3)
         else if (line[0]=='v' && line[1] == 'n')
         {
-            readCoord(&line[2],GL_ARRAY_BUFFER,sizeof(Vertex_t)*n_idx+offsetof(Vertex_t,n),3);
+            readCoord(&line[2],GL_ARRAY_BUFFER,(n_idx/3)*8+3,3);
+            ErrCheck("read normal");
             n_idx += 3;
         }
         //  Texture coordinates (always 2)
@@ -216,9 +219,9 @@ int ObjToVao(char* file, int shader) {
         //  Read and draw facets
         else if (line[0]=='f')
         {
-            line++;
+            str = strtok(line," ");
             //  Read Vertex/Texture/Normal triplets
-            while ((str = getword(&line)))
+            while ((str = strtok(NULL," ")) != NULL)
             {
                 int Kv,Kt,Kn;
                 //  Try Vertex/Texture/Normal triplet
@@ -232,26 +235,42 @@ int ObjToVao(char* file, int shader) {
                     if (Kv != Kn) Fatal("Vertex %d//%d: mixed data is unsupported\n",Kv,Kn);
                 }
                 //  Try Vertex index
-                else if (sscanf(str,"%d",&Kv)==1)
+                else if (sscanf(str,"%d",&Kv)!=1)
                 {
-                    // if (Kv<0 || Kv>Nv/3) Fatal("Vertex %d out of range 1-%d\n",Kv,Nv/3);
-                }
-                //  This is an error
-                else
+                    //  Throw error
                     Fatal("Invalid facet %s\n",str);
+                }
                 //  Draw vectors
-                Indices[i_idx] = Kv;
+                Indices[i_idx] = Kv-1;
                 i_idx++;
             }
             if (i_idx >= 1024-3) {
-                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,i_offset,10,Indices);
+                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,i_offset*4,i_idx*4,Indices);
                 i_offset += i_idx;
                 i_idx = 0;
             }
         }
         //  Skip this line
     }
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,i_offset,i_idx,Indices);
+
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,i_offset*4,i_idx*4,Indices);
+    
+    // Debug Vertex Buffer
+	float data[Nv*8];
+	glGetBufferSubData(GL_ARRAY_BUFFER,0,Nv*4*8,data);
+	for (int i=0;i<36*8;i+=8) {
+		printf("%.1f %.1f %.1f || %.1f %.1f %.1f\n",data[i],data[i+1],data[i+2],data[i+3],data[i+4],data[i+5]);
+	}
+
+    // // Debug Index Buffer
+	// int data[Ni];
+	// glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER,0,4*Ni,data);
+	// for (int i=0;i<Ni;i+=3) {
+	// 	printf("%d %d %d\n",data[i],data[i+1],data[i+2]);
+	// }
+
+    // for (int i=0;i<i_idx;i++) printf("%.1f\n", Indices[i]);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,i_offset*4,i_idx*4,Indices);
     i_offset += i_idx;
     i_idx = 0;
 
@@ -265,6 +284,7 @@ int ObjToVao(char* file, int shader) {
     ErrCheck("obj to vao");
 
     // Vertex Attributes
+    // A lot of these are disabled because I am not yet supporting texture info
     glUseProgram(shader);
     // Get locations of attributes in shader
     int posLoc = glGetAttribLocation(shader,"Pos");
@@ -275,13 +295,15 @@ int ObjToVao(char* file, int shader) {
     // glEnableVertexAttribArray(texLoc);
     glEnableVertexAttribArray(nrmLoc);
     // Set vertex attribute pointers
-    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex_t), (void*)offsetof(Vertex_t,v));
+    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex_t), 0);
     // glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex_t), (void*)offsetof(Vertex_t,t));
     glVertexAttribPointer(nrmLoc, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex_t), (void*)offsetof(Vertex_t,n));
     ErrCheck("attrib ptrs");
 
-    //  Free malloc'd array
-    // free(Indices);
+    // printf("%d\n",ibo);
+    glBindVertexArray(0);
+    // glBindBuffer(GL_ARRAY_BUFFER,0);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
 
-   return vao;
+   return Ni;
 }

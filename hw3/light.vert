@@ -31,5 +31,5 @@ void main() {
     vTex = Tex;
 
     gl_Position = gl_ProjectionMatrix * P;
-    vCol = Col;
+    vCol = vec3(1);
 }

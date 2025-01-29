@@ -87,7 +87,7 @@ void Teapot(float x,float y,float z,float r,float th,float ph,int n,int tex);
 
 // ObjToVao - Drew Smith
 GLuint CreateStaticVertexBuffer(int vsize, void* vdata, int isize, void* idata);
-int ObjToVao(char* file, int shader);
+int ObjToVao(GLuint* vao,char* file, int shader);
 
 #include "mat4.h"
 

@@ -14,7 +14,7 @@ float asp = 1;
 int mode = 0;
 int tex = 0;
 int obj = 0;
-int shader[1] = {0};
+int shader[2] = {0};
 int timeUniform[2]= {0};
 const char* text[] = {"Water Normals","Ripple", "Base Lighting"};
 float lightPosition[3] = {0,1.5,-3};
@@ -27,7 +27,9 @@ double deltaTime = 0;
 int paused = 0;
 int moveLight=0;
 // Objects
+int loaderMode = 0;
 unsigned int objects[2] = {0};
+int objIndices = 0;
 int lists[1] = {0};
 
 typedef struct Vertex {
@@ -104,8 +106,8 @@ GLuint SurfIndices[] = {
 void DisplayObject(unsigned int vao, int n, int texture) {
 	glBindTexture(GL_TEXTURE_2D,texture);
 	glBindVertexArray(vao);
-	glDrawElements(GL_TRIANGLES,n,GL_UNSIGNED_INT,0);
-	// glDrawArrays(GL_TRIANGLES,0,n);
+	// glDrawElements(GL_POINTS,n,GL_UNSIGNED_INT,0);
+	glDrawArrays(GL_POINTS,0,n);
 	ErrCheck("object");
 }
 
@@ -120,16 +122,24 @@ void display(GLFWwindow* window) {
 		lightPosition[1] = 1.5;
 		lightPosition[2] = 3*Sin(progTime*100);
 	}
-	Lighting(lightPosition[0],lightPosition[1],lightPosition[2],0,0,0);
+	// Lighting(lightPosition[0],lightPosition[1],lightPosition[2],0,0,0);
 
 	//  Enable shader
-	glUseProgram(shader[0]);
+	// glUseProgram(shader[0]);
+	glUseProgram(shader[1]);
 	
 	//  Draw scene
-	if (obj)
-		DisplayObject(objects[1],6,tex);
-	else {
-		DisplayObject(objects[0],36,tex);
+	if (loaderMode) 
+	{
+		glCallList(lists[0]);
+	}
+	else
+	{
+		if (obj)
+			DisplayObject(objects[1],36,tex);
+		else {
+			DisplayObject(objects[0],objIndices,tex);
+		}
 	}
 	//  Revert to fixed pipeline
 	glUseProgram(0);
@@ -188,7 +198,7 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods) {
 			th = ph = 0;
 		//  Switch shaders
 		else if (key==GLFW_KEY_M)
-			mode = (mode+1)%3;
+			loaderMode=!loaderMode;
 		//  Switch objects
 		else if (key==GLFW_KEY_O)
 			obj = 1-obj;
@@ -287,21 +297,30 @@ int main(int argc, char** argv) {
 	GLFWwindow* window = InitWindow("Drew Smith", 0, 800,600 , reshape, key);
 
 	shader[0] = CreateShaderProg("light.vert","light.frag");
-	objects[0] = CreateObject(shader[0],sizeof(CubeVertices),CubeVertices,sizeof(CubeIndices),CubeIndices);
-	// lists[0] = LoadOBJ("tyra.obj");
+	shader[1] = CreateShaderProg("passthrough.vert","passthrough.frag");
+	objects[1] = CreateObject(shader[0],sizeof(CubeVertices),CubeVertices,sizeof(CubeIndices),CubeIndices);
+	lists[0] = LoadOBJ("tyra.obj");
 	ErrCheck("init");
 
-	glFinish();
-	ObjToVao("teapot.obj",shader[0]);
+	objIndices = ObjToVao(&objects[0],"tyra.obj",shader[0]);
 	ErrCheck("obj loader");
+	// printf("%u\n",objects[0]);
+
+	// glBindVertexArray(objects[0]);
+	// glBindBuffer(GL_ARRAY_BUFFER,3);
+	// float data[36*8];
+	// glGetBufferSubData(GL_ARRAY_BUFFER,0,36*4*8,data);
+	// for (int i=0;i<36*8;i+=8) {
+	// 	printf("%.1f %.1f %.1f || %.1f %.1f%.1f\n",data[i],data[i+1],data[i+2],data[i+3],data[i+4],data[i+5]);
+	// }
 
 	// Main loop
-	// while(!glfwWindowShouldClose(window)) {
-	// 	handleInputs();
-	// 	display(window);
-	// 	glfwPollEvents();
-	// 	updateTime();
-	// }
+	while(!glfwWindowShouldClose(window)) {
+		handleInputs();
+		display(window);
+		glfwPollEvents();
+		updateTime();
+	}
 
 	// Exit
 	glfwDestroyWindow(window);
