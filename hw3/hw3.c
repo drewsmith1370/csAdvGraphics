@@ -106,8 +106,8 @@ GLuint SurfIndices[] = {
 void DisplayObject(unsigned int vao, int n, int texture) {
 	glBindTexture(GL_TEXTURE_2D,texture);
 	glBindVertexArray(vao);
-	// glDrawElements(GL_POINTS,n,GL_UNSIGNED_INT,0);
-	glDrawArrays(GL_POINTS,0,n);
+	glDrawElements(GL_TRIANGLES,n,GL_UNSIGNED_INT,0);
+	// glDrawArrays(GL_POINTS,0,n);
 	ErrCheck("object");
 }
 
@@ -122,11 +122,11 @@ void display(GLFWwindow* window) {
 		lightPosition[1] = 1.5;
 		lightPosition[2] = 3*Sin(progTime*100);
 	}
-	// Lighting(lightPosition[0],lightPosition[1],lightPosition[2],0,0,0);
+	Lighting(lightPosition[0],lightPosition[1],lightPosition[2],0,0,0);
 
 	//  Enable shader
-	// glUseProgram(shader[0]);
-	glUseProgram(shader[1]);
+	glUseProgram(shader[0]);
+	// glUseProgram(shader[1]);
 	
 	//  Draw scene
 	if (loaderMode) 
@@ -149,12 +149,6 @@ void display(GLFWwindow* window) {
 	Axes(2);
 	//  Display parameters
 	SetColor(1,1,1);
-
-	glPointSize(5);
-	glBegin(GL_POINTS);
-	glVertex3fv(lightPosition);
-	glEnd();
-
 	glWindowPos2i(5,5);
 	Print("FPS:%d",FramesPerSecond());
 	//  Render the scene and make it visible

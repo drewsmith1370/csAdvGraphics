@@ -118,10 +118,7 @@ static void readCoord(char* from, GLenum to, GLintptr offset, int n) {
         if (!str)  Fatal("Premature EOL reading %d floats\n",n);
         if (sscanf(str,"%f",temp+i)!=1) Fatal("Error reading float %d\nString: %s\n",i,str);
     }
-    printf("%.1f %.1f %.1f || ",temp[0],temp[1],temp[2]);
     glBufferSubData(to,offset,sizeof(float[3]),temp);
-
-    printf("offset: %d\n",offset);
 }
 
 //
@@ -258,8 +255,11 @@ int ObjToVao(GLuint* vao, char* file, int shader) {
     // Debug Vertex Buffer
 	float data[Nv*8];
 	glGetBufferSubData(GL_ARRAY_BUFFER,0,Nv*4*8,data);
-	for (int i=0;i<36*8;i+=8) {
-		printf("%.1f %.1f %.1f || %.1f %.1f %.1f\n",data[i],data[i+1],data[i+2],data[i+3],data[i+4],data[i+5]);
+	for (int i=0;i<Nv*8;i+=8) {
+		if (data[i  ] > 5 || data[i+1] > 5 || data[i+2] > 5) {
+            printf("%.1f %.1f %.1f || %.1f %.1f %.1f: %d\n",data[i],data[i+1],data[i+2],data[i+3],data[i+4],data[i+5], i/8);
+            Fatal("Bad buffer data. Exiting...\n");
+        }
 	}
 
     // // Debug Index Buffer
