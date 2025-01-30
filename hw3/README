@@ -17,7 +17,7 @@ Key bindings:
 - 0 : Reset view angle
 - ESC : Exit
 
-## Estimated Findings
+## Findings
 
 School laptop with Intel Core i3 / Integrated graphics:
 
@@ -26,4 +26,14 @@ School laptop with Intel Core i3 / Integrated graphics:
 - 70 FPS for Display list T-Rex
 - 5000 FPS for basic cube
 
-Time to complete: 7-8 hours; the holiday helped a lot.
+PC with AMD 7800X GPU:
+
+- 5600 FPS for Localized VAO T-Rex
+- 5500 FPS for Nonlocalized VAO T-Rex
+- 300 FPS for Display list T-Rex
+- 23000 FPS for basic cube
+
+Notably, the AMD drivers for display lists didn't seem to work, and kept making the program seg fault before the framerate settled.
+Also, the object loader is much faster on the intel system, probably because of how I did the buffer writes and the close proximity of the integrated graphics.
+
+Time to complete: ~10 hours, mainly debugging the dang object loader.

@@ -146,7 +146,7 @@ void display(GLFWwindow* window) {
 	//  Display parameters
 	SetColor(1,1,1);
 	glWindowPos2i(5,5);
-	Print("FPS:%d",FramesPerSecond());
+	Print("FPS:%d Mode:%s",FramesPerSecond(),text[loaderMode]);
 	//  Render the scene and make it visible
 	ErrCheck("display");
 	glFlush();
