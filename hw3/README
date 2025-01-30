@@ -1,16 +1,29 @@
-# Homework 2: Procedurally Generated Water Normal Shader
+# Homework 3: Performance of vertex data locality
 
-Made by Drew Smith. This Shader uses texture coordinates to generate a normal map with sinusoids, then orients them to the world using the TNB vectors at each vertex. The second shader shows a normal mapping demo with a ripple effect. Third shader is basic lighting using TNB normal.
+Made by Drew Smith. The goal of this program is to compare the performance of using local vs nonlocal vertex data.
+
+This program has two types of rudimentary VAO object loader alongside Vlakkies display list loader:
+
+- The first creates a VAO where the normals are local to each vertex
+- The second creates a VAO where the normals are all placed after the vertices
 
 Key bindings:
 
 - Space : Pause/Unpause
-- L : Toggle light rotation
-- m : Toggle shader
+- m : Toggle loader mode
 - o : Change objects
 - arrows : Look around
 - =, - : Zoom in, out
 - 0 : Reset view angle
 - ESC : Exit
+
+## Estimated Findings
+
+School laptop with Intel Core i3 / Integrated graphics:
+
+- 1000 FPS for Localized VAO T-Rex
+- 600 FPS for Nonlocalized VAO T-Rex
+- 70 FPS for Display list T-Rex
+- 5000 FPS for basic cube
 
 Time to complete: 7-8 hours; the holiday helped a lot.

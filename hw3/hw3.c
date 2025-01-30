@@ -11,13 +11,9 @@ float fov = 59;
 float dim = 2;
 float asp = 1;
 // Misc
-int mode = 0;
-int tex = 0;
-int obj = 0;
-int shader[2] = {0};
-int timeUniform[2]= {0};
-const char* text[] = {"Water Normals","Ripple", "Base Lighting"};
+int shader[1] = {0};
 float lightPosition[3] = {0,1.5,-3};
+char* text[4] = {"Localized VAO","Nonlocal VAO","Display Lists","Cube VAO"};
 // Matrices
 unsigned int lightLoc = 0;
 // Time
@@ -25,10 +21,10 @@ double progTime = 0;
 double prevTime = 0;
 double deltaTime = 0;
 int paused = 0;
-int moveLight=0;
 // Objects
 int loaderMode = 0;
 unsigned int objects[2] = {0};
+unsigned int nonlocal = 0;
 int objIndices = 0;
 int lists[1] = {0};
 
@@ -107,7 +103,6 @@ void DisplayObject(unsigned int vao, int n, int texture) {
 	glBindTexture(GL_TEXTURE_2D,texture);
 	glBindVertexArray(vao);
 	glDrawElements(GL_TRIANGLES,n,GL_UNSIGNED_INT,0);
-	// glDrawArrays(GL_POINTS,0,n);
 	ErrCheck("object");
 }
 
@@ -117,29 +112,30 @@ void display(GLFWwindow* window) {
 	glEnable(GL_DEPTH_TEST);
 	View(th,ph,fov,dim);
 
-	if (moveLight) {
-		lightPosition[0] = 3*Cos(progTime*100);
-		lightPosition[1] = 1.5;
-		lightPosition[2] = 3*Sin(progTime*100);
-	}
+	lightPosition[0] = 3*Cos(progTime*100);
+	lightPosition[1] = 1.5;
+	lightPosition[2] = 3*Sin(progTime*100);
+
 	Lighting(lightPosition[0],lightPosition[1],lightPosition[2],0,0,0);
 
 	//  Enable shader
 	glUseProgram(shader[0]);
-	// glUseProgram(shader[1]);
 	
 	//  Draw scene
-	if (loaderMode) 
+	if (loaderMode == 3) {
+		DisplayObject(objects[1],35,0);
+	}
+	else if (loaderMode == 2) 
 	{
+		glUseProgram(shader[1]);
 		glCallList(lists[0]);
+	}
+	else if (loaderMode == 1) {
+		DisplayObject(nonlocal,objIndices,0);
 	}
 	else
 	{
-		if (obj)
-			DisplayObject(objects[1],36,tex);
-		else {
-			DisplayObject(objects[0],objIndices,tex);
-		}
+		DisplayObject(objects[0],objIndices,0);
 	}
 	//  Revert to fixed pipeline
 	glUseProgram(0);
@@ -191,11 +187,10 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods) {
 		if (key==GLFW_KEY_0)
 			th = ph = 0;
 		//  Switch shaders
-		else if (key==GLFW_KEY_M)
-			loaderMode=!loaderMode;
-		//  Switch objects
-		else if (key==GLFW_KEY_O)
-			obj = 1-obj;
+		else if (key==GLFW_KEY_M) {
+			loaderMode++;
+			loaderMode%=4;
+		}
 		//  PageUp key - increase dim
 		else if (key==GLFW_KEY_MINUS) {
 			dim += 0.1;
@@ -207,10 +202,6 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods) {
 		// Spacee - pause
 		else if (key==GLFW_KEY_SPACE && dim>1) {
 			paused = !paused;
-		}
-		// l - move light
-		else if (key==GLFW_KEY_L) {
-			moveLight = !moveLight;
 		}
     }
     else if (action == GLFW_RELEASE) {
@@ -267,20 +258,20 @@ int CreateObject(int shader, int vsize, void* vdata, int isize, void* idata) {
     // Get locations of attributes in shader
     int posLoc = glGetAttribLocation(shader,"Pos");
     int nrmLoc = glGetAttribLocation(shader,"Nrm");
-    // int texLoc = glGetAttribLocation(shader,"Tex");
+    int texLoc = glGetAttribLocation(shader,"Tex");
     int colLoc = glGetAttribLocation(shader,"Col");
 
     // Enable VAOs
-    glEnableVertexAttribArray(posLoc);
-    glEnableVertexAttribArray(nrmLoc);
-    // glEnableVertexAttribArray(texLoc);
-    glEnableVertexAttribArray(colLoc);
+    if (posLoc != -1) glEnableVertexAttribArray(posLoc);
+    if (nrmLoc != -1) glEnableVertexAttribArray(nrmLoc);
+    if (texLoc != -1) glEnableVertexAttribArray(texLoc);
+    if (colLoc != -1) glEnableVertexAttribArray(colLoc);
 
     // Set vertex attribute pointers
-    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex,Pos));
-    glVertexAttribPointer(nrmLoc, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex,Nrm));
-    // glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex,Tex));
-    glVertexAttribPointer(colLoc, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex,Col));
+    if (posLoc != -1) glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex,Pos));
+    if (nrmLoc != -1) glVertexAttribPointer(nrmLoc, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex,Nrm));
+    if (texLoc != -1) glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex,Tex));
+    if (colLoc != -1) glVertexAttribPointer(colLoc, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex,Col));
 
 	return name;
 }
@@ -290,23 +281,15 @@ int main(int argc, char** argv) {
 	// Init
 	GLFWwindow* window = InitWindow("Drew Smith", 0, 800,600 , reshape, key);
 
+	// Shaders
 	shader[0] = CreateShaderProg("light.vert","light.frag");
-	shader[1] = CreateShaderProg("passthrough.vert","passthrough.frag");
-	objects[1] = CreateObject(shader[0],sizeof(CubeVertices),CubeVertices,sizeof(CubeIndices),CubeIndices);
+	shader[1] = CreateShaderProg("pixel.vert","phong.frag");
+	// Objects
 	lists[0] = LoadOBJ("tyra.obj");
-	ErrCheck("init");
-
-	glEnable(GL_DEPTH_TEST);
+	objects[1] = CreateObject(shader[0],sizeof(CubeVertices),CubeVertices,sizeof(CubeIndices),CubeIndices);
 	objIndices = ObjToVao(&objects[0],"tyra.obj",shader[0]);
-	ErrCheck("obj loader");
-
-	// glBindVertexArray(objects[0]);
-	// glBindBuffer(GL_ARRAY_BUFFER,3);
-	// float data[36*8];
-	// glGetBufferSubData(GL_ARRAY_BUFFER,0,36*4*8,data);
-	// for (int i=0;i<36*8;i+=8) {
-	// 	printf("%.1f %.1f %.1f || %.1f %.1f%.1f\n",data[i],data[i+1],data[i+2],data[i+3],data[i+4],data[i+5]);
-	// }
+	ObjToVaoNonlocal(&nonlocal,"tyra.obj",shader[0]);
+	ErrCheck("init");
 
 	// Main loop
 	while(!glfwWindowShouldClose(window)) {

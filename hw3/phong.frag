@@ -1,48 +1,44 @@
-#version 430
+//  Per-pixel Phong lighting
+//  Fragment shader
+#version 120
 
-in vec3 vNrm;
-in vec3 Light;
-in vec3 View;
-in vec2 vTex;
-in vec3 vCol;
-
-out vec4 FragColor;
-
-// Make these Uniforms later ig, but it would be best to make more organized objects in main first
-const float Ambient = .1;
-const float Diffuse = .6;
-const float Spectral = .8;
+varying vec3 View;
+varying vec3 Light;
+varying vec3 Normal;
+varying vec4 Ambient;
+uniform sampler2D tex;
 
 vec4 phong()
 {
    //  N is the object normal
-   vec3 N = normalize(vNrm);
+   vec3 N = normalize(Normal);
    //  L is the light vector
    vec3 L = normalize(Light);
 
    //  Emission and ambient color
-   float intensity = Ambient;
+   vec4 color = vec4(.1,.1,.1,1);
 
    //  Diffuse light is cosine of light and normal vectors
    float Id = dot(L,N);
    if (Id>0.0)
    {
       //  Add diffuse
-      intensity += Id*Diffuse;
+      color += Id*vec4(.6,.6,.6,1);
       //  R is the reflected light vector R = 2(L.N)N - L
       vec3 R = reflect(-L,N);
       //  V is the view vector (eye vector)
       vec3 V = normalize(View);
       //  Specular is cosine of reflected and view vectors
       float Is = dot(R,V);
-      if (Is>0.0) intensity += pow(Is,10)*Spectral;
+      if (Is>0.0) color += pow(Is,gl_FrontMaterial.shininess)*vec4(.8,.8,.8,1);
    }
 
    //  Return sum of color components
-   return vec4(intensity * vCol,1);
+   return color;
 }
 
-
-void main() {
-   FragColor = phong();
+void main()
+{
+   gl_FragColor = phong();// * texture2D(tex,gl_TexCoord[0].xy);
+   // gl_FragColor = vec4(Normal,1);
 }
