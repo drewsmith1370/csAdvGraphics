@@ -23,7 +23,7 @@ void main() {
     //  Light position
     Light  = gl_LightSource[0].position.xyz - P.xyz;
     //  Find TNB Vectors
-    vNrm = gl_NormalMatrix * normalize(Nrm);
+    vNrm = gl_NormalMatrix * Nrm;
 
     //  Eye position
     View  = -P.xyz;

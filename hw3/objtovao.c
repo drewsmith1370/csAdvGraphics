@@ -1,5 +1,6 @@
 #include "CSCIx239.h"
 #include <ctype.h>
+#include <assert.h>
 
 typedef struct {
     float v[3];
@@ -119,6 +120,9 @@ static void readCoord(char* from, GLenum to, GLintptr offset, int n) {
         if (sscanf(str,"%f",temp+i)!=1) Fatal("Error reading float %d\nString: %s\n",i,str);
     }
     glBufferSubData(to,offset,sizeof(float[3]),temp);
+
+    float data[3];
+    glGetBufferSubData(to,offset,sizeof(float[3]),data);
 }
 
 //
@@ -206,7 +210,7 @@ int ObjToVao(GLuint* vao, char* file, int shader) {
         //  Normal coordinates (always 3)
         else if (line[0]=='v' && line[1] == 'n')
         {
-            readCoord(&line[2],GL_ARRAY_BUFFER,(n_idx/3)*8+3,3);
+            readCoord(&line[2],GL_ARRAY_BUFFER,(n_idx/3)*4*8+12,3);
             ErrCheck("read normal");
             n_idx += 3;
         }
@@ -251,16 +255,14 @@ int ObjToVao(GLuint* vao, char* file, int shader) {
     }
 
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,i_offset*4,i_idx*4,Indices);
+    glFinish();
     
-    // Debug Vertex Buffer
-	float data[Nv*8];
-	glGetBufferSubData(GL_ARRAY_BUFFER,0,Nv*4*8,data);
-	for (int i=0;i<Nv*8;i+=8) {
-		if (data[i  ] > 5 || data[i+1] > 5 || data[i+2] > 5) {
-            printf("%.1f %.1f %.1f || %.1f %.1f %.1f: %d\n",data[i],data[i+1],data[i+2],data[i+3],data[i+4],data[i+5], i/8);
-            Fatal("Bad buffer data. Exiting...\n");
-        }
-	}
+    // // Debug Vertex Buffer
+	// float data[Nv*8];
+	// glGetBufferSubData(GL_ARRAY_BUFFER,0,Nv*4*8,data);
+	// for (int i=0;i<Nv/4*8;i+=8) {
+    //     printf("%.1f %.1f %.1f || %.1f %.1f %.1f: %d\n",data[i],data[i+1],data[i+2],data[i+3],data[i+4],data[i+5], i/8);
+	// }
 
     // // Debug Index Buffer
 	// int data[Ni];
@@ -301,7 +303,7 @@ int ObjToVao(GLuint* vao, char* file, int shader) {
     ErrCheck("attrib ptrs");
 
     // printf("%d\n",ibo);
-    glBindVertexArray(0);
+    
     // glBindBuffer(GL_ARRAY_BUFFER,0);
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
 

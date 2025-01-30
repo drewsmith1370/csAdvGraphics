@@ -11,7 +11,7 @@ out vec4 FragColor;
 // Make these Uniforms later ig, but it would be best to make more organized objects in main first
 const float Ambient = .1;
 const float Diffuse = .5;
-const float Spectral = .8;
+const float Spectral = .1;
 // Wave props
 const float time = 0;
 const float vel = 1;

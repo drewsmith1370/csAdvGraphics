@@ -296,9 +296,9 @@ int main(int argc, char** argv) {
 	lists[0] = LoadOBJ("tyra.obj");
 	ErrCheck("init");
 
+	glEnable(GL_DEPTH_TEST);
 	objIndices = ObjToVao(&objects[0],"tyra.obj",shader[0]);
 	ErrCheck("obj loader");
-	// printf("%u\n",objects[0]);
 
 	// glBindVertexArray(objects[0]);
 	// glBindBuffer(GL_ARRAY_BUFFER,3);
