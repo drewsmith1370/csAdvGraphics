@@ -27,15 +27,14 @@
 #include <stdarg.h>
 #include <math.h>
 #include "mat4.h"
+#include "createVkFunctions.c"
 
 //  cos and sin in degrees
 #define Cos(th) cos(3.14159265/180*(th))
 #define Sin(th) sin(3.14159265/180*(th))
 
-#define NFRAMES 2                                           // Frames in flight
-#define RGBA_FORMAT VK_FORMAT_R8G8B8A8_SRGB                 // RGBA format
 int                      move=1;                            // Light movement
-int                      th=0,ph=0,zh=0;                    // View angles
+float                    th=0,ph=0,zh=0;                    // View angles
 int                      proj=1;                            // Projection type
 float                    fov=55;                            // Field of view
 float                    Ylight=2;                          // Light elevation
@@ -87,62 +86,26 @@ VkDeviceMemory           textureImageMemory;                // Texture image mem
 VkImageView              textureImageView;                  // Texture image view
 VkSampler                textureSampler;                    // Texture sampler
 
-//  Define cube
-typedef struct {float x,y;}     vec2;
-typedef struct {float x,y,z;}   vec3;
-typedef struct {float x,y,z,w;} vec4;
-typedef struct {vec3 xyz,nml,rgb;vec2 st;} Vertex;
-typedef struct
-{
-   float model[16],view[16],proj[16],norm[16]; // Transformation matrices
-   vec4  pos,Ca,Cd,Cs;                         // Light properties
-   vec4  Ks;                                   // Material properties
-   float Ns;                                   //
-} UniformBufferObject;
-const Vertex vertices[] =
-{
-   //  Front
-   {{-1,-1,+1}, {0,0,+1}, {1,0,0}, {0,0}},
-   {{+1,-1,+1}, {0,0,+1}, {1,0,0}, {1,0}},
-   {{+1,+1,+1}, {0,0,+1}, {1,0,0}, {1,1}},
-   {{+1,+1,+1}, {0,0,+1}, {1,0,0}, {1,1}},
-   {{-1,+1,+1}, {0,0,+1}, {1,0,0}, {0,1}},
-   {{-1,-1,+1}, {0,0,+1}, {1,0,0}, {0,0}},
-   //  Back              
-   {{+1,-1,-1}, {0,0,-1}, {0,0,1}, {0,0}},
-   {{-1,-1,-1}, {0,0,-1}, {0,0,1}, {1,0}},
-   {{-1,+1,-1}, {0,0,-1}, {0,0,1}, {1,1}},
-   {{-1,+1,-1}, {0,0,-1}, {0,0,1}, {1,1}},
-   {{+1,+1,-1}, {0,0,-1}, {0,0,1}, {0,1}},
-   {{+1,-1,-1}, {0,0,-1}, {0,0,1}, {0,0}},
-   //  Right             
-   {{+1,-1,+1}, {+1,0,0}, {1,1,0}, {0,0}},
-   {{+1,-1,-1}, {+1,0,0}, {1,1,0}, {1,0}},
-   {{+1,+1,-1}, {+1,0,0}, {1,1,0}, {1,1}},
-   {{+1,+1,-1}, {+1,0,0}, {1,1,0}, {1,1}},
-   {{+1,+1,+1}, {+1,0,0}, {1,1,0}, {0,1}},
-   {{+1,-1,+1}, {+1,0,0}, {1,1,0}, {0,0}},
-   //  Left              
-   {{-1,-1,-1}, {-1,0,0}, {0,1,0}, {0,0}},
-   {{-1,-1,+1}, {-1,0,0}, {0,1,0}, {1,0}},
-   {{-1,+1,+1}, {-1,0,0}, {0,1,0}, {1,1}},
-   {{-1,+1,+1}, {-1,0,0}, {0,1,0}, {1,1}},
-   {{-1,+1,-1}, {-1,0,0}, {0,1,0}, {0,1}},
-   {{-1,-1,-1}, {-1,0,0}, {0,1,0}, {0,0}},
-   //  Top               
-   {{-1,+1,+1}, {0,+1,0}, {0,1,1}, {0,0}},
-   {{+1,+1,+1}, {0,+1,0}, {0,1,1}, {1,0}},
-   {{+1,+1,-1}, {0,+1,0}, {0,1,1}, {1,1}},
-   {{+1,+1,-1}, {0,+1,0}, {0,1,1}, {1,1}},
-   {{-1,+1,-1}, {0,+1,0}, {0,1,1}, {0,1}},
-   {{-1,+1,+1}, {0,+1,0}, {0,1,1}, {0,0}},
-   //  Bottom            
-   {{-1,-1,-1}, {0,-1,0}, {1,0,1}, {0,0}},
-   {{+1,-1,-1}, {0,-1,0}, {1,0,1}, {1,0}},
-   {{+1,-1,+1}, {0,-1,0}, {1,0,1}, {1,1}},
-   {{+1,-1,+1}, {0,-1,0}, {1,0,1}, {1,1}},
-   {{-1,-1,+1}, {0,-1,0}, {1,0,1}, {0,1}},
-   {{-1,-1,-1}, {0,-1,0}, {1,0,1}, {0,0}},
+
+// Inputs
+char keys[256] = {0};
+int ua = 0, da = 0, la = 0, ra = 0;
+// Time
+double progTime = 0;
+double prevTime = 0;
+double deltaTime = 0;
+int paused = 0;
+
+// Surface
+typedef struct {vec3 pos, nml, tan, rgb; vec2 tex} VertexTNB;
+const VertexTNB surfaceVertices[] = {
+   {.pos={-1,0, 1},.nml={0,1,0},.tan={1,0,0},.rgb={0,.5,1},.tex={0,0}},
+   {.pos={ 1,0, 1},.nml={0,1,0},.tan={1,0,0},.rgb={0,.5,1},.tex={1,0}},
+   {.pos={ 1,0,-1},.nml={0,1,0},.tan={1,0,0},.rgb={0,.5,1},.tex={1,1}},
+   {.pos={-1,0,-1},.nml={0,1,0},.tan={1,0,0},.rgb={0,.5,1},.tex={0,1}},
+};
+const unsigned int surfaceIndices[] = {
+   0,1,2,3
 };
 
 //
@@ -819,24 +782,21 @@ void CreateDevice()
        Fatal("Failed to create command pool\n");
 }
 
-//
-//  Create graphics pipeline
-//
-void CreateGraphicsPipeline()
-{
+void CreateSurfacePipeline() {
    //  Attributes for cube
    VkVertexInputBindingDescription bindingDescription =
    {
-      .stride = sizeof(Vertex),
+      .stride = sizeof(VertexTNB),
       .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
    };
    //  Layout for xyz, rgb and st
    VkVertexInputAttributeDescription attributeDescriptions[] =
    {
-      {.location=0, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(Vertex,xyz) },
-      {.location=1, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(Vertex,nml) },
-      {.location=2, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(Vertex,rgb) },
-      {.location=3, .format=VK_FORMAT_R32G32_SFLOAT   , .offset=offsetof(Vertex,st)  },
+      {.location=0, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,pos) },
+      {.location=1, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,nml) },
+      {.location=2, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,tan) },
+      {.location=3, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,rgb) },
+      {.location=4, .format=VK_FORMAT_R32G32_SFLOAT   , .offset=offsetof(VertexTNB,tex) },
    };
    //  Set input state
    VkPipelineVertexInputStateCreateInfo vertexInputInfo =
@@ -847,14 +807,6 @@ void CreateGraphicsPipeline()
       .vertexAttributeDescriptionCount = sizeof(attributeDescriptions)/sizeof(VkVertexInputAttributeDescription),
       .pVertexAttributeDescriptions    = attributeDescriptions,
    };
-
-   //  Create uniform buffers
-   for (int k=0;k<NFRAMES;k++)
-   {
-      VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-      CreateBuffer(bufferSize,VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,&uniformBuffers[k],&uniformBuffersMemory[k]);
-      vkMapMemory(device,uniformBuffersMemory[k],0,bufferSize,0,&uniformBuffersMapped[k]);
-   }
 
    //  Uniform buffer layout
    VkDescriptorSetLayoutBinding uboLayoutBinding =
@@ -874,6 +826,14 @@ void CreateGraphicsPipeline()
       .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
    };
 
+   //  Create uniform buffers
+   for (int k=0;k<NFRAMES;k++)
+   {
+      VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+      CreateBuffer(bufferSize,VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,&uniformBuffers[k],&uniformBuffersMemory[k]);
+      vkMapMemory(device,uniformBuffersMemory[k],0,bufferSize,0,&uniformBuffersMapped[k]);
+   }
+
    //  Create descriptor layout
    VkDescriptorSetLayoutBinding bindings[] = {uboLayoutBinding, samplerLayoutBinding};
    VkDescriptorSetLayoutCreateInfo layoutInfo =
@@ -885,211 +845,6 @@ void CreateGraphicsPipeline()
    if (vkCreateDescriptorSetLayout(device,&layoutInfo,NULL,&descriptorSetLayout))
       Fatal("Failed to create descriptor set layout\n");
 
-   //  Pipeline layout
-   VkPipelineLayoutCreateInfo pipelineLayoutInfo =
-   {
-      .sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-      .setLayoutCount = 1,
-      .pSetLayouts    = &descriptorSetLayout,
-   };
-   if (vkCreatePipelineLayout(device,&pipelineLayoutInfo,NULL,&pipelineLayout))
-      Fatal("Failed to create pipeline layout\n");
-
-   //  Create descriptor pool
-   VkDescriptorPoolSize poolSizes[] =
-   {
-      {.type=VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER        , .descriptorCount=NFRAMES},
-      {.type=VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount=NFRAMES},
-   };
-
-   VkDescriptorPoolCreateInfo dsPoolInfo =
-   {
-      .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-      .poolSizeCount = sizeof(poolSizes)/sizeof(VkDescriptorPoolSize),
-      .pPoolSizes = poolSizes,
-      .maxSets = NFRAMES,
-   };
-   if (vkCreateDescriptorPool(device,&dsPoolInfo,NULL,&descriptorPool))
-      Fatal("Failed to create descriptor pool\n");
-
-   //  Create descriptor sets
-   VkDescriptorSetLayout layouts[NFRAMES];
-   for (int k=0;k<NFRAMES;k++)
-      layouts[k] =  descriptorSetLayout;
-   VkDescriptorSetAllocateInfo dsAllocInfo =
-   {
-      .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-      .descriptorPool = descriptorPool,
-      .descriptorSetCount = NFRAMES,
-      .pSetLayouts = layouts,
-   };
-   if (vkAllocateDescriptorSets(device,&dsAllocInfo,descriptorSets))
-      Fatal("Failed to allocate descriptor sets\n");
-   //  Set descriptors for each frame
-   for (int k=0;k<NFRAMES;k++)
-   {
-      VkDescriptorBufferInfo bufferInfo =
-      {
-         .buffer = uniformBuffers[k],
-         .offset = 0,
-         .range = sizeof(UniformBufferObject),
-      };
-      VkDescriptorImageInfo imageInfo =
-      {
-         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         .imageView = textureImageView,
-         .sampler = textureSampler,
-      };
-
-      VkWriteDescriptorSet descriptorWrites[] =
-      {
-         {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = descriptorSets[k],
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = 1,
-            .pBufferInfo = &bufferInfo,
-         },
-         {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = descriptorSets[k],
-            .dstBinding = 1,
-            .dstArrayElement = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = 1,
-            .pImageInfo = &imageInfo,
-         },
-      };
-
-      vkUpdateDescriptorSets(device,sizeof(descriptorWrites)/sizeof(VkWriteDescriptorSet),descriptorWrites,0,NULL);
-   }
-
-   //  Select TRIANGLE LIST
-   VkPipelineInputAssemblyStateCreateInfo inputAssembly =
-   {
-      .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-      .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-      .primitiveRestartEnable = VK_FALSE,
-   };
-
-   //  Enable CULL FACE
-   VkPipelineRasterizationStateCreateInfo rasterizer =
-   {
-      .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-      .depthClampEnable        = VK_FALSE,
-      .rasterizerDiscardEnable = VK_FALSE,
-      .polygonMode             = VK_POLYGON_MODE_FILL,
-      .lineWidth               = 1,
-      .cullMode                = VK_CULL_MODE_BACK_BIT,
-      .frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-      .depthBiasEnable         = VK_FALSE,
-   };
-
-   //  Enable Z-buffer
-   VkPipelineDepthStencilStateCreateInfo depthStencil =
-   {
-      .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-      .depthTestEnable = VK_TRUE,
-      .depthWriteEnable = VK_TRUE,
-      .depthCompareOp = VK_COMPARE_OP_LESS,
-      .depthBoundsTestEnable = VK_FALSE,
-      .stencilTestEnable = VK_FALSE,
-   };
-
-   //  Disable multisampling
-   VkPipelineMultisampleStateCreateInfo multisampling =
-   {
-      .sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-      .sampleShadingEnable  = VK_FALSE,
-      .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-   };
-
-   //  Disable blending
-   VkPipelineColorBlendAttachmentState colorBlendAttachment =
-   {
-      .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-      .blendEnable    = VK_FALSE,
-   };
-
-   //  Blend function copy
-   VkPipelineColorBlendStateCreateInfo colorBlending =
-   {
-      .sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-      .logicOpEnable     = VK_FALSE,
-      .logicOp           = VK_LOGIC_OP_COPY,
-      .attachmentCount   = 1,
-      .pAttachments      = &colorBlendAttachment,
-      .blendConstants[0] = 0,
-      .blendConstants[1] = 0,
-      .blendConstants[2] = 0,
-      .blendConstants[3] = 0,
-   };
-
-   //  Enable viewport and scissors test
-   VkPipelineViewportStateCreateInfo viewportState =
-   {
-      .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-      .viewportCount = 1,
-      .scissorCount  = 1,
-   };
-
-   //  Allow viewport and scissors to change dynamically
-   VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,VK_DYNAMIC_STATE_SCISSOR};
-   VkPipelineDynamicStateCreateInfo dynamicState =
-   {
-      .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-      .dynamicStateCount = sizeof(dynamicStates)/sizeof(VkDynamicState),
-      .pDynamicStates    = dynamicStates,
-   };
-
-   //  Vertex shader module
-   VkShaderModule vertShaderModule = CreateShaderModule("vert.spv");
-   VkPipelineShaderStageCreateInfo vertShaderStageInfo =
-   {
-      .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-      .stage  = VK_SHADER_STAGE_VERTEX_BIT,
-      .module = vertShaderModule,
-      .pName  = "main",
-   };
-
-   //  Fragment shader module
-   VkShaderModule fragShaderModule = CreateShaderModule("frag.spv");
-   VkPipelineShaderStageCreateInfo fragShaderStageInfo =
-   {
-      .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-      .stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
-      .module = fragShaderModule,
-      .pName  = "main",
-   };
-
-   //  Create graphics pipeline
-   VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,fragShaderStageInfo};
-   VkGraphicsPipelineCreateInfo pipelineInfo =
-   {
-      .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-      .stageCount = 2,
-      .pStages = shaderStages,
-      .pVertexInputState = &vertexInputInfo,
-      .pInputAssemblyState = &inputAssembly,
-      .pViewportState      = &viewportState,
-      .pRasterizationState = &rasterizer,
-      .pDepthStencilState  = &depthStencil,
-      .pMultisampleState   = &multisampling,
-      .pColorBlendState    = &colorBlending,
-      .pDynamicState       = &dynamicState,
-      .layout              = pipelineLayout,
-      .renderPass          = renderPass,
-      .subpass             = 0,
-      .basePipelineHandle  = VK_NULL_HANDLE,
-   };
-   if (vkCreateGraphicsPipelines(device,VK_NULL_HANDLE,1,&pipelineInfo,NULL,&graphicsPipeline))
-      Fatal("failed to create graphics pipeline\n");
-
-   //  Delete shader modules
-   vkDestroyShaderModule(device,fragShaderModule,NULL);
-   vkDestroyShaderModule(device,vertShaderModule,NULL);
 }
 
 //
@@ -1576,45 +1331,100 @@ void DestroyVulkan()
    vkDestroyInstance(instance,NULL);
 }
 
-//
-//  Key pressed callback
-//
-void key(GLFWwindow* window,int key,int scancode,int action,int mods)
-{
-   //  Discard key releases (keeps PRESS and REPEAT)
-   if (action==GLFW_RELEASE) return;
+// Handle new keys from glfw
+void key(GLFWwindow* window,int key,int scancode,int action,int mods) {
+    char setTo;
+	// Figure out if key was pressed or released
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        setTo = 1;
 
-   //  Exit on ESC
-   if (key == GLFW_KEY_ESCAPE)
-      glfwSetWindowShouldClose(window,1);
-   //  Right arrow key - increase angle by 5 degrees
-   else if (key == GLFW_KEY_RIGHT)
-      th += 5;
-   //  Left arrow key - decrease angle by 5 degrees
-   else if (key == GLFW_KEY_LEFT)
-      th -= 5;
-   //  Up arrow key - increase elevation by 5 degrees
-   else if (key == GLFW_KEY_UP)
-      ph += 5;
-   //  Down arrow key - decrease elevation by 5 degrees
-   else if (key == GLFW_KEY_DOWN)
-      ph -= 5;
-   //  Toggle projection type
-   else if (key == GLFW_KEY_P)
-      proj = 1-proj;
-   //  Light movement
-   else if (key == GLFW_KEY_M)
-      move = !move;
-   //  Light elevation
-   else if (key == GLFW_KEY_KP_ADD)
-      Ylight += 0.1;
-   else if (key == GLFW_KEY_KP_SUBTRACT)
-      Ylight -= 0.1;
-   //  Light position
-   else if (key==GLFW_KEY_LEFT_BRACKET)
-      zh += 1;
-   else if (key==GLFW_KEY_RIGHT_BRACKET)
-      zh -= 1;
+		//  Reset view angle
+		if (key==GLFW_KEY_0)
+			th = ph = 0;
+         //  Toggle projection type
+      else if (key == GLFW_KEY_P)
+         proj = 1-proj;
+      //  Light movement
+      else if (key == GLFW_KEY_M)
+         move = !move;
+      //  Light elevation
+      else if (key == GLFW_KEY_KP_ADD)
+         Ylight += 0.1;
+      else if (key == GLFW_KEY_KP_SUBTRACT)
+         Ylight -= 0.1;
+      //  Light position
+      else if (key==GLFW_KEY_LEFT_BRACKET)
+         zh += 1;
+      else if (key==GLFW_KEY_RIGHT_BRACKET)
+         zh -= 1;
+		//  PageUp key - increase dim
+		else if (key==GLFW_KEY_MINUS) {
+			dim += 0.1;
+		}
+		//  PageDown key - decrease dim
+		else if (key==GLFW_KEY_EQUAL && dim>1) {
+			dim -= 0.1;
+		}
+		// // Spacee - pause
+		// else if (key==GLFW_KEY_SPACE && dim>1) {
+		// 	paused = !paused;
+		// }
+    }
+    else if (action == GLFW_RELEASE) {
+        setTo = 0;
+    } 
+	else return;
+
+	// Set key if it is a char
+    if (key < 256) {
+        keys[key] = setTo;
+        return;
+    }
+
+    // Arrow keys
+    else if (key == GLFW_KEY_RIGHT)
+        ra = setTo;
+    else if (key == GLFW_KEY_LEFT)
+        la = setTo;
+    else if (key == GLFW_KEY_UP)
+        ua = setTo;
+    else if (key == GLFW_KEY_DOWN)
+        da = setTo;
+
+    //  Exit on ESC
+    if (key == GLFW_KEY_ESCAPE)
+        glfwSetWindowShouldClose(window,1);
+ 
+}
+
+// Update time variables each frame
+void updateTime() {
+    // Update time and deltaTime
+    double now = glfwGetTime();
+    deltaTime = now - prevTime;
+	// Increment time
+	if (!paused) progTime += deltaTime;
+	// Update previous
+    prevTime = now;
+}
+
+void handleInputs() {
+	// Special
+    if (la)
+        th -= 75 * deltaTime;
+    if (ra) 
+        th += 75 * deltaTime;
+    if (ua) 
+        ph -= 75 * deltaTime;
+    if (da) 
+        ph += 75 * deltaTime;
+
+   if (th > 360) th -= 360;
+	if (th <   0) th += 360;
+	if (ph >  90) ph =  90;
+	if (ph < -90) ph = -90;
+   //  Update projection
+   // Projection(fov,asp,dim);
 }
 
 //
@@ -1657,6 +1467,8 @@ int main()
    //  Main loop
    while (!glfwWindowShouldClose(window))
    {
+      updateTime();
+      handleInputs();
       display();
       glfwPollEvents();
    }
