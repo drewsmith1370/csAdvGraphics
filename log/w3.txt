@@ -1,0 +1,18 @@
+# Homework 3 review
+
+I successfully implemented a very rudimentary object loader, and I think that 
+was a pretty good goal in its own. I did not get to explore as much GLSL 
+performance as I would have liked, but I did get to explore the affect of data 
+locality on GPU performance; Having separate arrays really kills the performance 
+of the vertex shader. I also wanted to look at the affects of uniform buffer objects,
+but I think that will have to wait for another time.
+
+# Homework 4 goals (Vulkan)
+
+I am largely undecided what I will do for homework 4; I definitely want to gain some 
+experience with Vulkan, so I will start from Vlakkies example code. From there, I wish to
+learn to draw objects, possibly adding axes or other objects, and it could be cool to 
+multithread object rendering. However, above all, I want to make a cool compute shader 
+because I haven't done that in a while and am getting an itch, so maybe I will just focus on 
+making some simple shader pipelines. As a stretch goal, I will achieve both these tasks and make
+multiple objects render with multiple pipelines in parallel.

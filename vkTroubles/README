@@ -1,0 +1,16 @@
+# Homework 3: Performance of vertex data locality
+
+Made by Drew Smith.
+
+I wanted to refactor some of the code to be accessible through a large shared library... This is a start, sure, but I didn't know what I was doing so I ended up abstracting a lof of it into function calls without much control over the API. A current goal is to get each major vulkan object a larger class to handle common procedures and be able to interact with other objects, but still maintain control over the actual API.
+
+Key bindings:
+
+- p/P : Toggle between orthogonal & perspective projection
+- m/M : Stop/start light movement
+- -/+ : Move light up/down
+- [/] : Move light in orbit
+- arrows : Change view angle
+- ESC : Exit
+
+Time to complete:
