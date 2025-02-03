@@ -1,5 +1,5 @@
 # Example 07
-EXE=ex07
+EXE=hw4
 
 # Main target
 all: $(EXE) vert.spv frag.spv
@@ -24,7 +24,10 @@ CLEAN=rm -f $(EXE) *.o *.a
 endif
 
 # Dependencies
-ex07.o: ex07.c mat4.h
+hw4.o: hw4.c CSCIx239Vk.h
+createVk.o: createVk.c CSCIx239Vk.h
+initwin.o: initwin.c CSCIx239Vk.h
+fatal.o: fatal.c CSCIx239Vk.h
 mat4.o: mat4.c mat4.h
 
 # Compile rules
@@ -39,7 +42,7 @@ vert.spv:vulkan.vert
 frag.spv:vulkan.frag
 	glslangValidator -V -o frag.spv vulkan.frag
 #  Link
-ex07:ex07.o mat4.o 
+hw4:hw4.o createVk.o initwin.o fatal.o mat4.o 
 	gcc $(CFLG) -o $@ $^  $(LIBS)
 
 #  Clean
