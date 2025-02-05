@@ -24,6 +24,9 @@
 #include <GL/gl.h>
 #endif
 
+// Debugging macro
+#define VK_CHECK(f) {if(f != VK_SUCCESS) printf("Fatal: VkResult is %s\n",ErrString(f))}
+
 #define Cos(th) cos(3.1415926/180*(th))
 #define Sin(th) sin(3.1415926/180*(th))
 
@@ -33,6 +36,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 // Helper Functions
 // Print message to stderr and exit
@@ -68,6 +72,7 @@ typedef struct {float x,y;}     vec2;
 typedef struct {float x,y,z;}   vec3;
 typedef struct {float x,y,z,w;} vec4;
 typedef struct {vec3 xyz,nml,rgb;vec2 st;} Vertex;
+typedef struct {vec3 pos, nml, tan, rgb; vec2 tex;} VertexTNB;
 typedef struct
 {
    float model[16],view[16],proj[16],norm[16]; // Transformation matrices
@@ -106,6 +111,8 @@ void DestroyVulkan();
 VkShaderModule CreateShaderModule(const char* file);
 //  Create graphics pipeline
 void CreateGraphicsPipeline();
+// Create the TNB Surface
+void CreateTNBGraphicsPipeline();
 
 
 #include "mat4.h"

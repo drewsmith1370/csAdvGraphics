@@ -8,7 +8,7 @@ all: $(EXE) vert.spv frag.spv
 ifeq "$(OS)" "Windows_NT"
 CFLG=-O3 -Wall -DUSEGLEW
 LIBS=-lglfw3 -lvulkan-1 -lm
-CLEAN=rm -f *.exe *.o *.a
+CLEAN=rm -f *.exe *.o *.a *.spv
 else
 #  OSX
 ifeq "$(shell uname)" "Darwin"
@@ -20,7 +20,7 @@ CFLG=-O3 -Wall
 LIBS=-lglfw -lvulkan -lm
 endif
 #  OSX/Linux/Unix/Solaris
-CLEAN=rm -f $(EXE) *.o *.a
+CLEAN=rm -f $(EXE) *.o *.a *.spv
 endif
 
 # Dependencies

@@ -37,9 +37,9 @@ uint32_t                 graphicsFamily=0;                  // Graphics family
 uint32_t                 presentFamily=0;                   // Presentation family
 VkBuffer                 vertexBuffer;                      // Vertex buffer
 VkDeviceMemory           vertexBufferMemory;                // Vertex buffer memory
-VkBuffer                 uniformBuffers[NFRAMES];           // Uniform buffers
-VkDeviceMemory           uniformBuffersMemory[NFRAMES];     // Uniform buffer memory
-void*                    uniformBuffersMapped[NFRAMES];     // Mapping for uniform buffer
+VkBuffer                 uniformBuffers[NFRAMES*2];           // Uniform buffers
+VkDeviceMemory           uniformBuffersMemory[NFRAMES*2];     // Uniform buffer memory
+void*                    uniformBuffersMapped[NFRAMES*2];     // Mapping for uniform buffer
 VkDescriptorPool         descriptorPool;                    // Descriptor pool
 VkDescriptorSet          descriptorSets[NFRAMES];           // Descriptor sets
 VkImage                  textureImage;                      // Texture image
@@ -47,51 +47,98 @@ VkDeviceMemory           textureImageMemory;                // Texture image mem
 VkImageView              textureImageView;                  // Texture image view
 VkSampler                textureSampler;                    // Texture sampler
 
-static const Vertex cubeVertices[] =
+// static const Vertex cubeVertices[] =
+// {
+//    //  Front
+//    {{-1,-1,+1}, {0,0,+1}, {1,0,0}, {0,0}},
+//    {{+1,-1,+1}, {0,0,+1}, {1,0,0}, {1,0}},
+//    {{+1,+1,+1}, {0,0,+1}, {1,0,0}, {1,1}},
+//    {{+1,+1,+1}, {0,0,+1}, {1,0,0}, {1,1}},
+//    {{-1,+1,+1}, {0,0,+1}, {1,0,0}, {0,1}},
+//    {{-1,-1,+1}, {0,0,+1}, {1,0,0}, {0,0}},
+//    //  Back              
+//    {{+1,-1,-1}, {0,0,-1}, {0,0,1}, {0,0}},
+//    {{-1,-1,-1}, {0,0,-1}, {0,0,1}, {1,0}},
+//    {{-1,+1,-1}, {0,0,-1}, {0,0,1}, {1,1}},
+//    {{-1,+1,-1}, {0,0,-1}, {0,0,1}, {1,1}},
+//    {{+1,+1,-1}, {0,0,-1}, {0,0,1}, {0,1}},
+//    {{+1,-1,-1}, {0,0,-1}, {0,0,1}, {0,0}},
+//    //  Right             
+//    {{+1,-1,+1}, {+1,0,0}, {1,1,0}, {0,0}},
+//    {{+1,-1,-1}, {+1,0,0}, {1,1,0}, {1,0}},
+//    {{+1,+1,-1}, {+1,0,0}, {1,1,0}, {1,1}},
+//    {{+1,+1,-1}, {+1,0,0}, {1,1,0}, {1,1}},
+//    {{+1,+1,+1}, {+1,0,0}, {1,1,0}, {0,1}},
+//    {{+1,-1,+1}, {+1,0,0}, {1,1,0}, {0,0}},
+//    //  Left              
+//    {{-1,-1,-1}, {-1,0,0}, {0,1,0}, {0,0}},
+//    {{-1,-1,+1}, {-1,0,0}, {0,1,0}, {1,0}},
+//    {{-1,+1,+1}, {-1,0,0}, {0,1,0}, {1,1}},
+//    {{-1,+1,+1}, {-1,0,0}, {0,1,0}, {1,1}},
+//    {{-1,+1,-1}, {-1,0,0}, {0,1,0}, {0,1}},
+//    {{-1,-1,-1}, {-1,0,0}, {0,1,0}, {0,0}},
+//    //  Top               
+//    {{-1,+1,+1}, {0,+1,0}, {0,1,1}, {0,0}},
+//    {{+1,+1,+1}, {0,+1,0}, {0,1,1}, {1,0}},
+//    {{+1,+1,-1}, {0,+1,0}, {0,1,1}, {1,1}},
+//    {{+1,+1,-1}, {0,+1,0}, {0,1,1}, {1,1}},
+//    {{-1,+1,-1}, {0,+1,0}, {0,1,1}, {0,1}},
+//    {{-1,+1,+1}, {0,+1,0}, {0,1,1}, {0,0}},
+//    //  Bottom            
+//    {{-1,-1,-1}, {0,-1,0}, {1,0,1}, {0,0}},
+//    {{+1,-1,-1}, {0,-1,0}, {1,0,1}, {1,0}},
+//    {{+1,-1,+1}, {0,-1,0}, {1,0,1}, {1,1}},
+//    {{+1,-1,+1}, {0,-1,0}, {1,0,1}, {1,1}},
+//    {{-1,-1,+1}, {0,-1,0}, {1,0,1}, {0,1}},
+//    {{-1,-1,-1}, {0,-1,0}, {1,0,1}, {0,0}},
+// };
+
+static const VertexTNB tnbCubeVertices[] =
 {
    //  Front
-   {{-1,-1,+1}, {0,0,+1}, {1,0,0}, {0,0}},
-   {{+1,-1,+1}, {0,0,+1}, {1,0,0}, {1,0}},
-   {{+1,+1,+1}, {0,0,+1}, {1,0,0}, {1,1}},
-   {{+1,+1,+1}, {0,0,+1}, {1,0,0}, {1,1}},
-   {{-1,+1,+1}, {0,0,+1}, {1,0,0}, {0,1}},
-   {{-1,-1,+1}, {0,0,+1}, {1,0,0}, {0,0}},
+   {.pos={-1,-1,+1}, .nml={0,0,+1}, .tan={1,0,0}, .rgb={1,0,0}, .tex={0,0}},
+   {.pos={+1,-1,+1}, .nml={0,0,+1}, .tan={1,0,0}, .rgb={1,0,0}, .tex={1,0}},
+   {.pos={+1,+1,+1}, .nml={0,0,+1}, .tan={1,0,0}, .rgb={1,0,0}, .tex={1,1}},
+   {.pos={+1,+1,+1}, .nml={0,0,+1}, .tan={1,0,0}, .rgb={1,0,0}, .tex={1,1}},
+   {.pos={-1,+1,+1}, .nml={0,0,+1}, .tan={1,0,0}, .rgb={1,0,0}, .tex={0,1}},
+   {.pos={-1,-1,+1}, .nml={0,0,+1}, .tan={1,0,0}, .rgb={1,0,0}, .tex={0,0}},
    //  Back              
-   {{+1,-1,-1}, {0,0,-1}, {0,0,1}, {0,0}},
-   {{-1,-1,-1}, {0,0,-1}, {0,0,1}, {1,0}},
-   {{-1,+1,-1}, {0,0,-1}, {0,0,1}, {1,1}},
-   {{-1,+1,-1}, {0,0,-1}, {0,0,1}, {1,1}},
-   {{+1,+1,-1}, {0,0,-1}, {0,0,1}, {0,1}},
-   {{+1,-1,-1}, {0,0,-1}, {0,0,1}, {0,0}},
+   {.pos={+1,-1,-1}, .nml={0,0,-1}, .tan={-1,0,0}, .rgb={0,0,1}, .tex={0,0}},
+   {.pos={-1,-1,-1}, .nml={0,0,-1}, .tan={-1,0,0}, .rgb={0,0,1}, .tex={1,0}},
+   {.pos={-1,+1,-1}, .nml={0,0,-1}, .tan={-1,0,0}, .rgb={0,0,1}, .tex={1,1}},
+   {.pos={-1,+1,-1}, .nml={0,0,-1}, .tan={-1,0,0}, .rgb={0,0,1}, .tex={1,1}},
+   {.pos={+1,+1,-1}, .nml={0,0,-1}, .tan={-1,0,0}, .rgb={0,0,1}, .tex={0,1}},
+   {.pos={+1,-1,-1}, .nml={0,0,-1}, .tan={-1,0,0}, .rgb={0,0,1}, .tex={0,0}},
    //  Right             
-   {{+1,-1,+1}, {+1,0,0}, {1,1,0}, {0,0}},
-   {{+1,-1,-1}, {+1,0,0}, {1,1,0}, {1,0}},
-   {{+1,+1,-1}, {+1,0,0}, {1,1,0}, {1,1}},
-   {{+1,+1,-1}, {+1,0,0}, {1,1,0}, {1,1}},
-   {{+1,+1,+1}, {+1,0,0}, {1,1,0}, {0,1}},
-   {{+1,-1,+1}, {+1,0,0}, {1,1,0}, {0,0}},
+   {.pos={+1,-1,+1}, .nml={+1,0,0}, .tan={ 0,0,-1}, .rgb={1,1,0}, .tex={0,0}},
+   {.pos={+1,-1,-1}, .nml={+1,0,0}, .tan={ 0,0,-1}, .rgb={1,1,0}, .tex={1,0}},
+   {.pos={+1,+1,-1}, .nml={+1,0,0}, .tan={ 0,0,-1}, .rgb={1,1,0}, .tex={1,1}},
+   {.pos={+1,+1,-1}, .nml={+1,0,0}, .tan={ 0,0,-1}, .rgb={1,1,0}, .tex={1,1}},
+   {.pos={+1,+1,+1}, .nml={+1,0,0}, .tan={ 0,0,-1}, .rgb={1,1,0}, .tex={0,1}},
+   {.pos={+1,-1,+1}, .nml={+1,0,0}, .tan={ 0,0,-1}, .rgb={1,1,0}, .tex={0,0}},
    //  Left              
-   {{-1,-1,-1}, {-1,0,0}, {0,1,0}, {0,0}},
-   {{-1,-1,+1}, {-1,0,0}, {0,1,0}, {1,0}},
-   {{-1,+1,+1}, {-1,0,0}, {0,1,0}, {1,1}},
-   {{-1,+1,+1}, {-1,0,0}, {0,1,0}, {1,1}},
-   {{-1,+1,-1}, {-1,0,0}, {0,1,0}, {0,1}},
-   {{-1,-1,-1}, {-1,0,0}, {0,1,0}, {0,0}},
+   {.pos={-1,-1,-1}, .nml={-1,0,0}, .tan={ 0,0, 1}, .rgb={0,1,0}, .tex={0,0}},
+   {.pos={-1,-1,+1}, .nml={-1,0,0}, .tan={ 0,0, 1}, .rgb={0,1,0}, .tex={1,0}},
+   {.pos={-1,+1,+1}, .nml={-1,0,0}, .tan={ 0,0, 1}, .rgb={0,1,0}, .tex={1,1}},
+   {.pos={-1,+1,+1}, .nml={-1,0,0}, .tan={ 0,0, 1}, .rgb={0,1,0}, .tex={1,1}},
+   {.pos={-1,+1,-1}, .nml={-1,0,0}, .tan={ 0,0, 1}, .rgb={0,1,0}, .tex={0,1}},
+   {.pos={-1,-1,-1}, .nml={-1,0,0}, .tan={ 0,0, 1}, .rgb={0,1,0}, .tex={0,0}},
    //  Top               
-   {{-1,+1,+1}, {0,+1,0}, {0,1,1}, {0,0}},
-   {{+1,+1,+1}, {0,+1,0}, {0,1,1}, {1,0}},
-   {{+1,+1,-1}, {0,+1,0}, {0,1,1}, {1,1}},
-   {{+1,+1,-1}, {0,+1,0}, {0,1,1}, {1,1}},
-   {{-1,+1,-1}, {0,+1,0}, {0,1,1}, {0,1}},
-   {{-1,+1,+1}, {0,+1,0}, {0,1,1}, {0,0}},
+   {.pos={-1,+1,+1}, .nml={0,+1,0}, .tan={ 1,0, 0}, .rgb={0,1,1}, .tex={0,0}},
+   {.pos={+1,+1,+1}, .nml={0,+1,0}, .tan={ 1,0, 0}, .rgb={0,1,1}, .tex={1,0}},
+   {.pos={+1,+1,-1}, .nml={0,+1,0}, .tan={ 1,0, 0}, .rgb={0,1,1}, .tex={1,1}},
+   {.pos={+1,+1,-1}, .nml={0,+1,0}, .tan={ 1,0, 0}, .rgb={0,1,1}, .tex={1,1}},
+   {.pos={-1,+1,-1}, .nml={0,+1,0}, .tan={ 1,0, 0}, .rgb={0,1,1}, .tex={0,1}},
+   {.pos={-1,+1,+1}, .nml={0,+1,0}, .tan={ 1,0, 0}, .rgb={0,1,1}, .tex={0,0}},
    //  Bottom            
-   {{-1,-1,-1}, {0,-1,0}, {1,0,1}, {0,0}},
-   {{+1,-1,-1}, {0,-1,0}, {1,0,1}, {1,0}},
-   {{+1,-1,+1}, {0,-1,0}, {1,0,1}, {1,1}},
-   {{+1,-1,+1}, {0,-1,0}, {1,0,1}, {1,1}},
-   {{-1,-1,+1}, {0,-1,0}, {1,0,1}, {0,1}},
-   {{-1,-1,-1}, {0,-1,0}, {1,0,1}, {0,0}},
+   {.pos={-1,-1,-1}, .nml={0,-1,0}, .tan={-1,0, 0}, .rgb={1,0,1}, .tex={0,0}},
+   {.pos={+1,-1,-1}, .nml={0,-1,0}, .tan={-1,0, 0}, .rgb={1,0,1}, .tex={1,0}},
+   {.pos={+1,-1,+1}, .nml={0,-1,0}, .tan={-1,0, 0}, .rgb={1,0,1}, .tex={1,1}},
+   {.pos={+1,-1,+1}, .nml={0,-1,0}, .tan={-1,0, 0}, .rgb={1,0,1}, .tex={1,1}},
+   {.pos={-1,-1,+1}, .nml={0,-1,0}, .tan={-1,0, 0}, .rgb={1,0,1}, .tex={0,1}},
+   {.pos={-1,-1,-1}, .nml={0,-1,0}, .tan={-1,0, 0}, .rgb={1,0,1}, .tex={0,0}},
 };
+
 
 //  Wait for previous operations to complete
 VkResult WaitForFences() {
@@ -320,7 +367,7 @@ void CopyBuffer(VkBuffer srcBuffer,VkBuffer dstBuffer,VkDeviceSize size)
 //
 void CreateVertexBuffer()
 {
-   VkDeviceSize bufferSize = sizeof(cubeVertices);
+   VkDeviceSize bufferSize = sizeof(tnbCubeVertices);
 
    VkBuffer stagingBuffer;
    VkDeviceMemory stagingBufferMemory;
@@ -328,7 +375,7 @@ void CreateVertexBuffer()
 
    void* data;
    vkMapMemory(device,stagingBufferMemory,0,bufferSize,0,&data);
-   memcpy(data,cubeVertices,bufferSize);
+   memcpy(data,tnbCubeVertices,bufferSize);
    vkUnmapMemory(device,stagingBufferMemory);
 
    CreateBuffer(bufferSize,VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,&vertexBuffer,&vertexBufferMemory);
@@ -725,7 +772,7 @@ void RecordCommandBuffer(VkCommandBuffer commandBuffer,uint32_t imageIndex)
    vkCmdBindDescriptorSets(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,pipelineLayout,0,1,&descriptorSets[currentFrame],0,NULL);
 
    //  Render the object
-   vkCmdDraw(commandBuffer,sizeof(cubeVertices)/sizeof(Vertex),1,0,0);
+   vkCmdDraw(commandBuffer,sizeof(tnbCubeVertices)/sizeof(VertexTNB),1,0,0);
 
    //  End of render pass
    vkCmdEndRenderPass(commandBuffer);
@@ -1173,6 +1220,17 @@ VkShaderModule CreateShaderModule(const char* file)
 }
 
 
+// Surface
+const VertexTNB surfaceVertices[] = {
+   {.pos={-1,0, 1},.nml={0,1,0},.tan={1,0,0},.rgb={0,.5,1},.tex={0,0}},
+   {.pos={ 1,0, 1},.nml={0,1,0},.tan={1,0,0},.rgb={0,.5,1},.tex={1,0}},
+   {.pos={ 1,0,-1},.nml={0,1,0},.tan={1,0,0},.rgb={0,.5,1},.tex={1,1}},
+   {.pos={-1,0,-1},.nml={0,1,0},.tan={1,0,0},.rgb={0,.5,1},.tex={0,1}},
+};
+const unsigned int surfaceIndices[] = {
+   0,1,2,3
+};
+
 //
 //  Create graphics pipeline
 //
@@ -1181,16 +1239,17 @@ void CreateGraphicsPipeline()
    //  Attributes for cube
    VkVertexInputBindingDescription bindingDescription =
    {
-      .stride = sizeof(Vertex),
+      .stride = sizeof(VertexTNB),
       .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
    };
    //  Layout for xyz, rgb and st
    VkVertexInputAttributeDescription attributeDescriptions[] =
    {
-      {.location=0, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(Vertex,xyz) },
-      {.location=1, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(Vertex,nml) },
-      {.location=2, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(Vertex,rgb) },
-      {.location=3, .format=VK_FORMAT_R32G32_SFLOAT   , .offset=offsetof(Vertex,st)  },
+      {.location=0, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,pos) },
+      {.location=1, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,nml) },
+      {.location=2, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,tan) },
+      {.location=3, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,rgb) },
+      {.location=4, .format=VK_FORMAT_R32G32_SFLOAT   , .offset=offsetof(VertexTNB,tex) },
    };
    //  Set input state
    VkPipelineVertexInputStateCreateInfo vertexInputInfo =
@@ -1252,8 +1311,8 @@ void CreateGraphicsPipeline()
    //  Create descriptor pool
    VkDescriptorPoolSize poolSizes[] =
    {
-      {.type=VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER        , .descriptorCount=NFRAMES},
-      {.type=VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount=NFRAMES},
+      {.type=VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER        , .descriptorCount=NFRAMES*2},
+      {.type=VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount=NFRAMES*2},
    };
 
    VkDescriptorPoolCreateInfo dsPoolInfo =
@@ -1261,7 +1320,7 @@ void CreateGraphicsPipeline()
       .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
       .poolSizeCount = sizeof(poolSizes)/sizeof(VkDescriptorPoolSize),
       .pPoolSizes = poolSizes,
-      .maxSets = NFRAMES,
+      .maxSets = NFRAMES*2,
    };
    if (vkCreateDescriptorPool(device,&dsPoolInfo,NULL,&descriptorPool))
       Fatal("Failed to create descriptor pool\n");
@@ -1445,6 +1504,280 @@ void CreateGraphicsPipeline()
    vkDestroyShaderModule(device,fragShaderModule,NULL);
    vkDestroyShaderModule(device,vertShaderModule,NULL);
 }
+
+// //
+// //  Create graphics pipeline for TNB surface
+// //
+// void CreateTNBGraphicsPipeline()
+// {
+//    //  Attributes for TNB Vertices
+//    VkVertexInputBindingDescription bindingDescription =
+//    {
+//       .stride = sizeof(VertexTNB),
+//       .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+//    };
+//    //  Layout for xyz, rgb and st
+//    VkVertexInputAttributeDescription attributeDescriptions[] =
+//    {
+//       {.location=0, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,pos) },
+//       {.location=1, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,nml) },
+//       {.location=2, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,tan) },
+//       {.location=3, .format=VK_FORMAT_R32G32B32_SFLOAT, .offset=offsetof(VertexTNB,rgb) },
+//       {.location=4, .format=VK_FORMAT_R32G32_SFLOAT   , .offset=offsetof(VertexTNB,tex)  },
+//    };
+//    //  Set input state
+//    VkPipelineVertexInputStateCreateInfo vertexInputInfo =
+//    {
+//       .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+//       .vertexBindingDescriptionCount   = sizeof(bindingDescription)/sizeof(VkVertexInputBindingDescription),
+//       .pVertexBindingDescriptions      = &bindingDescription,
+//       .vertexAttributeDescriptionCount = sizeof(attributeDescriptions)/sizeof(VkVertexInputAttributeDescription),
+//       .pVertexAttributeDescriptions    = attributeDescriptions,
+//    };
+
+//    //  Create uniform buffers
+//    for (int k=2;k<NFRAMES+2;k++)
+//    {
+//       VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+//       CreateBuffer(bufferSize,VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,&uniformBuffers[k],&uniformBuffersMemory[k]);
+//       vkMapMemory(device,uniformBuffersMemory[k],0,bufferSize,0,&uniformBuffersMapped[k+2]);
+//    }
+
+//    //  Uniform buffer layout
+//    VkDescriptorSetLayoutBinding uboLayoutBinding =
+//    {
+//       .binding = 0,
+//       .descriptorCount = 1,
+//       .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+//       .pImmutableSamplers = NULL,
+//       .stageFlags = VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT,
+//    };
+//    VkDescriptorSetLayoutBinding samplerLayoutBinding =
+//    {
+//       .binding = 1,
+//       .descriptorCount = 1,
+//       .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+//       .pImmutableSamplers = NULL,
+//       .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+//    };
+
+//    //  Create descriptor layout
+//    VkDescriptorSetLayoutBinding bindings[] = {uboLayoutBinding, samplerLayoutBinding};
+//    VkDescriptorSetLayoutCreateInfo layoutInfo =
+//    {
+//       .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+//       .bindingCount = sizeof(bindings)/sizeof(VkDescriptorSetLayoutBinding),
+//       .pBindings = bindings,
+//    };
+//    if (vkCreateDescriptorSetLayout(device,&layoutInfo,NULL,&descriptorSetLayout))
+//       Fatal("Failed to create descriptor set layout\n");
+
+//    //  Pipeline layout
+//    VkPipelineLayoutCreateInfo pipelineLayoutInfo =
+//    {
+//       .sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+//       .setLayoutCount = 1,
+//       .pSetLayouts    = &descriptorSetLayout,
+//    };
+//    if (vkCreatePipelineLayout(device,&pipelineLayoutInfo,NULL,&pipelineLayout))
+//       Fatal("Failed to create pipeline layout\n");
+
+//    // //  Create descriptor pool
+//    // VkDescriptorPoolSize poolSizes[] =
+//    // {
+//    //    {.type=VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER        , .descriptorCount=NFRAMES},
+//    //    {.type=VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount=NFRAMES},
+//    // };
+
+//    // VkDescriptorPoolCreateInfo dsPoolInfo =
+//    // {
+//    //    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+//    //    .poolSizeCount = sizeof(poolSizes)/sizeof(VkDescriptorPoolSize),
+//    //    .pPoolSizes = poolSizes,
+//    //    .maxSets = NFRAMES,
+//    // };
+//    // if (vkCreateDescriptorPool(device,&dsPoolInfo,NULL,&descriptorPool))
+//    //    Fatal("Failed to create descriptor pool\n");
+
+//    //  Create descriptor sets
+//    VkDescriptorSetLayout layouts[NFRAMES];
+//    for (int k=0;k<NFRAMES;k++)
+//       layouts[k] =  descriptorSetLayout;
+//    VkDescriptorSetAllocateInfo dsAllocInfo =
+//    {
+//       .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+//       .descriptorPool = descriptorPool,
+//       .descriptorSetCount = NFRAMES,
+//       .pSetLayouts = layouts,
+//    };
+//    if (vkAllocateDescriptorSets(device,&dsAllocInfo,descriptorSets))
+//       Fatal("Failed to allocate descriptor sets\n");
+//    //  Set descriptors for each frame
+//    for (int k=0;k<NFRAMES;k++)
+//    {
+//       VkDescriptorBufferInfo bufferInfo =
+//       {
+//          .buffer = uniformBuffers[k],
+//          .offset = 0,
+//          .range = sizeof(UniformBufferObject),
+//       };
+//       VkDescriptorImageInfo imageInfo =
+//       {
+//          .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+//          .imageView = textureImageView,
+//          .sampler = textureSampler,
+//       };
+
+//       VkWriteDescriptorSet descriptorWrites[] =
+//       {
+//          {
+//             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+//             .dstSet = descriptorSets[k],
+//             .dstBinding = 0,
+//             .dstArrayElement = 0,
+//             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+//             .descriptorCount = 1,
+//             .pBufferInfo = &bufferInfo,
+//          },
+//          {
+//             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+//             .dstSet = descriptorSets[k],
+//             .dstBinding = 1,
+//             .dstArrayElement = 0,
+//             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+//             .descriptorCount = 1,
+//             .pImageInfo = &imageInfo,
+//          },
+//       };
+
+//       vkUpdateDescriptorSets(device,sizeof(descriptorWrites)/sizeof(VkWriteDescriptorSet),descriptorWrites,0,NULL);
+//    }
+
+//    //  Select TRIANGLE LIST
+//    VkPipelineInputAssemblyStateCreateInfo inputAssembly =
+//    {
+//       .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+//       .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+//       .primitiveRestartEnable = VK_FALSE,
+//    };
+
+//    //  Enable CULL FACE
+//    VkPipelineRasterizationStateCreateInfo rasterizer =
+//    {
+//       .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+//       .depthClampEnable        = VK_FALSE,
+//       .rasterizerDiscardEnable = VK_FALSE,
+//       .polygonMode             = VK_POLYGON_MODE_FILL,
+//       .lineWidth               = 1,
+//       .cullMode                = VK_CULL_MODE_BACK_BIT,
+//       .frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+//       .depthBiasEnable         = VK_FALSE,
+//    };
+
+//    //  Enable Z-buffer
+//    VkPipelineDepthStencilStateCreateInfo depthStencil =
+//    {
+//       .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+//       .depthTestEnable = VK_TRUE,
+//       .depthWriteEnable = VK_TRUE,
+//       .depthCompareOp = VK_COMPARE_OP_LESS,
+//       .depthBoundsTestEnable = VK_FALSE,
+//       .stencilTestEnable = VK_FALSE,
+//    };
+
+//    //  Disable multisampling
+//    VkPipelineMultisampleStateCreateInfo multisampling =
+//    {
+//       .sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+//       .sampleShadingEnable  = VK_FALSE,
+//       .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+//    };
+
+//    //  Disable blending
+//    VkPipelineColorBlendAttachmentState colorBlendAttachment =
+//    {
+//       .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+//       .blendEnable    = VK_FALSE,
+//    };
+
+//    //  Blend function copy
+//    VkPipelineColorBlendStateCreateInfo colorBlending =
+//    {
+//       .sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+//       .logicOpEnable     = VK_FALSE,
+//       .logicOp           = VK_LOGIC_OP_COPY,
+//       .attachmentCount   = 1,
+//       .pAttachments      = &colorBlendAttachment,
+//       .blendConstants[0] = 0,
+//       .blendConstants[1] = 0,
+//       .blendConstants[2] = 0,
+//       .blendConstants[3] = 0,
+//    };
+
+//    //  Enable viewport and scissors test
+//    VkPipelineViewportStateCreateInfo viewportState =
+//    {
+//       .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+//       .viewportCount = 1,
+//       .scissorCount  = 1,
+//    };
+
+//    //  Allow viewport and scissors to change dynamically
+//    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,VK_DYNAMIC_STATE_SCISSOR};
+//    VkPipelineDynamicStateCreateInfo dynamicState =
+//    {
+//       .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+//       .dynamicStateCount = sizeof(dynamicStates)/sizeof(VkDynamicState),
+//       .pDynamicStates    = dynamicStates,
+//    };
+
+//    //  Vertex shader module
+//    VkShaderModule vertShaderModule = CreateShaderModule("vert.spv");
+//    VkPipelineShaderStageCreateInfo vertShaderStageInfo =
+//    {
+//       .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+//       .stage  = VK_SHADER_STAGE_VERTEX_BIT,
+//       .module = vertShaderModule,
+//       .pName  = "main",
+//    };
+
+//    //  Fragment shader module
+//    VkShaderModule fragShaderModule = CreateShaderModule("frag.spv");
+//    VkPipelineShaderStageCreateInfo fragShaderStageInfo =
+//    {
+//       .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+//       .stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
+//       .module = fragShaderModule,
+//       .pName  = "main",
+//    };
+
+//    //  Create graphics pipeline
+//    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,fragShaderStageInfo};
+//    VkGraphicsPipelineCreateInfo pipelineInfo =
+//    {
+//       .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+//       .stageCount = 2,
+//       .pStages = shaderStages,
+//       .pVertexInputState = &vertexInputInfo,
+//       .pInputAssemblyState = &inputAssembly,
+//       .pViewportState      = &viewportState,
+//       .pRasterizationState = &rasterizer,
+//       .pDepthStencilState  = &depthStencil,
+//       .pMultisampleState   = &multisampling,
+//       .pColorBlendState    = &colorBlending,
+//       .pDynamicState       = &dynamicState,
+//       .layout              = pipelineLayout,
+//       .renderPass          = renderPass,
+//       .subpass             = 0,
+//       .basePipelineHandle  = VK_NULL_HANDLE,
+//    };
+//    if (vkCreateGraphicsPipelines(device,VK_NULL_HANDLE,1,&pipelineInfo,NULL,&graphicsPipeline))
+//       Fatal("failed to create graphics pipeline\n");
+
+//    //  Delete shader modules
+//    vkDestroyShaderModule(device,fragShaderModule,NULL);
+//    vkDestroyShaderModule(device,vertShaderModule,NULL);
+// }
 
 //
 //  Close vulkan

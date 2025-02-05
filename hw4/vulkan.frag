@@ -15,18 +15,43 @@ layout(binding=0) uniform UniformBufferObject {
 
 layout(binding = 1) uniform sampler2D tex; // Texture sampler
 
-layout(location=0) in vec3 Norm;  // Normal vector
-layout(location=1) in vec3 Light; // Light vector
-layout(location=2) in vec3 View;  // Eye vector
-layout(location=3) in vec3 col;   // Color
-layout(location=4) in vec2 t2d;   // Texture
+layout(location=0) in mat3 TNB;  // Normal vector
+layout(location=3) in vec3 Light; // Light vector
+layout(location=4) in vec3 View;  // Eye vector
+layout(location=5) in vec3 col;   // Color
+layout(location=6) in vec2 t2d;   // Texture
 
 layout(location=0) out vec4 fragColor; // Pixel color
+
+vec3 waveNormal(vec2 tex) {
+   // Calculate theta
+   vec2 dif = tex - vec2(.5,.5);
+   float dist2 = dif.x*dif.x + dif.y*dif.y;
+   vec3 nrm=vec3(0,1,0);
+
+   // if (dist2 < r2) {
+      nrm = vec3(
+         -dif.x*cos(200*dif.x*dif.x+200*dif.y*dif.y),
+         1,
+         -dif.y*cos(200*dif.x*dif.x+200*dif.y*dif.y)
+      );
+   // }
+
+   return normalize(nrm);
+}
 
 void main()
 {
    //  Normalize vectors and calculate reflection
-   vec3 N = normalize(Norm);
+   vec3 nrm = normalize(TNB[0].xyz);
+   vec3 tan = normalize(TNB[1].xyz);
+   vec3 bit = normalize(TNB[2].xyz);
+   mat3 TNB = mat3(nrm,tan,bit);
+
+   // Calculate texture normal
+   nrm = waveNormal(t2d);
+   vec3 N = TNB * nrm;
+
    vec3 L = normalize(Light);
    vec3 V = normalize(View);
    vec3 R = reflect(-L,N);
