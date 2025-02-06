@@ -1,0 +1,10 @@
+Drew Smith
+CSCI 5239
+Homework 4
+
+Vulkan Examples:
+
+- cube/ directory contains Vlakkies' example, modified to support normal maps
+- lib/ vdirectory contains a base library that I wrote, loosely based on converting Sascha Willem's C++ examples to C.
+
+Time to complete: ~18 hours (Vulkan is hard)

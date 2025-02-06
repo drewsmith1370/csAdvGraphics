@@ -1,0 +1,7 @@
+Made by Drew Smith
+CSCI 4239
+Based on Vulkan Base Example by Sascha Willems, and Vlakkies example
+
+Start to Vulkan scaffolding library. Implementations for devices and general buffers are added.
+
+Time to complete: ~8 hours
