@@ -19,8 +19,11 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
+// fatal.c
 const char* ErrString(VkResult err);
 void Fatal(const char* format , ...);
+// initwin.c
+GLFWwindow* InitWindow(const char* title,int sync,int width,int height , void (*reshape)(GLFWwindow*,int,int) , void (*key)(GLFWwindow*,int,int,int,int));
 
 // Debugging macro
 #define VK_CHECK(f) {VkResult res=f;\

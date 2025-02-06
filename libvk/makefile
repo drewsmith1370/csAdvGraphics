@@ -28,6 +28,7 @@ driver.o: driver.c CSCIx239Vk.h
 fatal.o: fatal.c CSCIx239Vk.h
 vkBuffer.o: vkBuffer.c vkBuffer.h CSCIx239Vk.h
 vkDevice.o: vkDevice.c vkDevice.h CSCIx239Vk.h
+initwin.o: initwin.c CSCIx239Vk.h
 mat4.o: mat4.c mat4.h
 
 # Compile rules
@@ -37,7 +38,7 @@ mat4.o: mat4.c mat4.h
 	g++ -c $(CFLG) $<
 
 #  Link
-driver:driver.o fatal.o vkBuffer.o vkDevice.o mat4.o
+driver:driver.o fatal.o vkBuffer.o vkDevice.o initwin.o mat4.o
 	gcc $(CFLG) -o $@ $^  $(LIBS)
 
 #  Clean
