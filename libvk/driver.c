@@ -1,5 +1,6 @@
 #include "CSCIx239Vk.h"
 
+// Vlakkies code to find a physical device (I ran out of time lol)
 VkPhysicalDevice findPhysicalDevice(GLFWwindow* window) {
 
     VkInstance instance;
