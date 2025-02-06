@@ -1,3 +1,4 @@
+#include "CSCIx239Vk.h"
 #include "vkDevice.h"
 
 //
@@ -9,10 +10,10 @@ struct Device CreateDevice(VkPhysicalDevice physicalDevice) {
     {
         .physicalDevice          = physicalDevice,
         .logicalDevice           = 0,
-        .properties              = 0,
-        .features                = 0,
-        .enabledFeatures         = 0,
-        .memoryProperties        = 0,
+        .properties              = {},
+        .features                = {},
+        .enabledFeatures         = {},
+        .memoryProperties        = {},
         .queueFamilyCount        = 0,
         .queueFamilyProperties   = 0,
         .extensionCount          = 0,
@@ -38,9 +39,9 @@ struct Device CreateDevice(VkPhysicalDevice physicalDevice) {
     // Get list of supported extensions
     vkEnumerateDeviceExtensionProperties(physicalDevice, NULL, &device.extensionCount, NULL);
     if (device.extensionCount > 0) {
-        device.supportedExtensions = (char*)malloc(device.extensionCount*sizeof(VkExtensionProperties));
+        device.supportedExtensions = (VkExtensionProperties*)malloc(device.extensionCount*sizeof(VkExtensionProperties));
         if (!device.supportedExtensions) Fatal("Error malloc'ing %d bytes\n", device.extensionCount*sizeof(VkExtensionProperties));
-        VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice,NULL,device.extensionCount,device.supportedExtensions));
+        VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice,NULL,&device.extensionCount,device.supportedExtensions));
     }
 
     return device;
@@ -101,6 +102,7 @@ uint32_t GetDeviceMemoryType(struct Device device, uint32_t typeBits, VkMemoryPr
     else
     {
         Fatal("Could not find a matching memory type\n");
+        return 0;
     }
 }
 
@@ -146,6 +148,7 @@ uint32_t GetDeviceQueueFamilyIndex(struct Device device, VkQueueFlags queueFlags
     }
 
     Fatal("Could not find a matching queue family index\n");
+    return 0;
 }
 
 //
@@ -173,7 +176,7 @@ VkResult CreateLogicalDevice(struct Device* device, VkPhysicalDeviceFeatures ena
     // Graphics queue
     if (requestedQueueTypes & VK_QUEUE_GRAPHICS_BIT)
     {
-        device->queueFamilyIndices.graphics = getQueueFamilyIndex(VK_QUEUE_GRAPHICS_BIT);
+        device->queueFamilyIndices.graphics = GetDeviceQueueFamilyIndex(*device, VK_QUEUE_GRAPHICS_BIT);
         VkDeviceQueueCreateInfo queueInfo = {
             .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
             .queueFamilyIndex = device->queueFamilyIndices.graphics,
@@ -190,16 +193,17 @@ VkResult CreateLogicalDevice(struct Device* device, VkPhysicalDeviceFeatures ena
     // Try to get a dedicated compute queue
     if (requestedQueueTypes & VK_QUEUE_COMPUTE_BIT)
     {
-        device->queueFamilyIndices.compute = getQueueFamilyIndex(VK_QUEUE_COMPUTE_BIT);
+        device->queueFamilyIndices.compute = GetDeviceQueueFamilyIndex(*device,VK_QUEUE_COMPUTE_BIT);
         if (device->queueFamilyIndices.compute != device->queueFamilyIndices.graphics)
         {
             // If compute family index differs, we need an additional queue create info for the compute queue
-            VkDeviceQueueCreateInfo queueInfo = {};
-            queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueInfo.queueFamilyIndex = device->queueFamilyIndices.compute;
-            queueInfo.queueCount = 1;
-            queueInfo.pQueuePriorities = &defaultQueuePriority;
-            queueCreateInfos[numQueues++];
+            VkDeviceQueueCreateInfo queueInfo = {
+                .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                .queueFamilyIndex = device->queueFamilyIndices.compute,
+                .queueCount = 1,
+                .pQueuePriorities = &defaultQueuePriority
+            };
+            queueCreateInfos[numQueues++] = queueInfo;
         }
     }
     else
@@ -211,7 +215,7 @@ VkResult CreateLogicalDevice(struct Device* device, VkPhysicalDeviceFeatures ena
     // Dedicated transfer queue
     if (requestedQueueTypes & VK_QUEUE_TRANSFER_BIT)
     {
-        device->queueFamilyIndices.transfer = getQueueFamilyIndex(VK_QUEUE_TRANSFER_BIT);
+        device->queueFamilyIndices.transfer = GetDeviceQueueFamilyIndex(*device,VK_QUEUE_TRANSFER_BIT);
         if ((device->queueFamilyIndices.transfer != device->queueFamilyIndices.graphics) && (device->queueFamilyIndices.transfer != device->queueFamilyIndices.compute))
         {
             // If transfer family index differs, we need an additional queue create info for the transfer queue
@@ -230,13 +234,24 @@ VkResult CreateLogicalDevice(struct Device* device, VkPhysicalDeviceFeatures ena
     }
 
     // Create the logical device representation
-    const char** deviceExtensions = enabledExtensions;
+    char** deviceExtensions;
     if (useSwapChain)
     {
         // If the device will be used for presenting to a display via a swapchain we need to request the swapchain extension
         numExtensions++;
-        deviceExtensions = (char*)malloc(sizeof(char[VK_MAX_EXTENSION_NAME_SIZE])*numExtensions);
+        deviceExtensions = (char**)malloc(sizeof(char*)*numExtensions);
+        if (!deviceExtensions) Fatal("Failed to mallocate %d bytes",sizeof(char*)*numExtensions);\
+        
+        // Copy existing strings to the new array
+        for (size_t i = 0; i < numExtensions-1; i++) {
+            deviceExtensions[i] = strdup(enabledExtensions[i]); // Duplicate each string
+            if (!deviceExtensions[i]) Fatal("Failed to duplicate string\n");
+        }
+        // Add new extension
         deviceExtensions[numExtensions-1] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+    }
+    else {
+        deviceExtensions = enabledExtensions;
     }
 
     VkDeviceCreateInfo deviceCreateInfo = {
@@ -256,7 +271,6 @@ VkResult CreateLogicalDevice(struct Device* device, VkPhysicalDeviceFeatures ena
         deviceCreateInfo.pNext = &physicalDeviceFeatures2;
     }
 
-    deviceExtensions;
     if (numExtensions > 0)
     {
         for (int i=0;i<numExtensions;i++)
@@ -267,7 +281,7 @@ VkResult CreateLogicalDevice(struct Device* device, VkPhysicalDeviceFeatures ena
         }
 
         deviceCreateInfo.enabledExtensionCount = numExtensions;
-        deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
+        deviceCreateInfo.ppEnabledExtensionNames = (const char* const*)deviceExtensions;
     }
 
     device->enabledFeatures = enabledFeatures;
@@ -279,7 +293,7 @@ VkResult CreateLogicalDevice(struct Device* device, VkPhysicalDeviceFeatures ena
     }
 
     // Create a default command pool for graphics command buffers
-    device->commandPool = CreateCommandPool(device, device->queueFamilyIndices.graphics,NULL);
+    device->commandPool = CreateCommandPool(device, device->queueFamilyIndices.graphics,0);
 
     return result;
 }
@@ -366,7 +380,7 @@ VkResult DeviceCreateBuffer(struct Device device, VkBufferUsageFlags usageFlags,
     vkGetBufferMemoryRequirements(device.logicalDevice, buffer->buffer, &memReqs);
     memAlloc.allocationSize = memReqs.size;
     // Find a memory type index that fits the properties of the buffer
-    memAlloc.memoryTypeIndex = getMemoryType(memReqs.memoryTypeBits, memoryPropertyFlags);
+    memAlloc.memoryTypeIndex = GetDeviceMemoryType(device,memReqs.memoryTypeBits, memoryPropertyFlags,NULL);
     // If the buffer has VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT set we also need to enable the appropriate flag during allocation
     VkMemoryAllocateFlagsInfoKHR allocFlagsInfo = {};
     if (usageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
@@ -514,10 +528,10 @@ void FlushCommandBuffer(struct Device* device, VkCommandBuffer commandBuffer, Vk
 //
 int ExtensionSupported(struct Device device, char* extension)
 {
-    char** available = device.supportedExtensions;
+    VkExtensionProperties* available = device.supportedExtensions;
     uint32_t n = device.extensionCount;
     for (uint32_t i=0;i<n;i++) {
-        if (strcmp(extension,available[i])) 
+        if (strcmp(extension,available[i].extensionName)) 
             return 1;
     }
     return 0;
@@ -552,4 +566,5 @@ VkFormat GetSupportedDepthFormat(struct Device device, int checkSamplingSupport)
         }
     }
     Fatal("Could not find a matching depth format");
+    return 0;
 }

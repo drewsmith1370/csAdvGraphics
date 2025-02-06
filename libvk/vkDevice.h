@@ -3,6 +3,8 @@
 #ifndef VKDEVICE
 #define VKDEVICE
 
+struct Device;
+struct Buffer;
 typedef struct Device
 {
 	// Physical device representation
@@ -32,7 +34,7 @@ typedef struct Device
 		uint32_t compute;
 		uint32_t transfer;
 	} queueFamilyIndices;
-};
+} *Device;
 
 // Create Device
 struct Device CreateDevice();

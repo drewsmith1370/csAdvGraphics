@@ -10,16 +10,23 @@
 #include <unistd.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 
 #ifdef USEGLEW
 #include <GL/glew.h>
 #endif
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <vulkan.h>
+#include <vulkan/vulkan.h>
+
+const char* ErrString(VkResult err);
+void Fatal(const char* format , ...);
 
 // Debugging macro
-#define VK_CHECK(f) {VkResult res=f; if(res != VK_SUCCESS) Fatal("Error: VkResult is %s\n",ErrString(res));}
+#define VK_CHECK(f) {VkResult res=f;\
+   if(res != VK_SUCCESS)\
+      Fatal("Error: VkResult is %s\n",ErrString(res));}
+
 // Default timeout for fences
 #define DEFAULT_FENCE_TIMEOUT 100000000000
 
@@ -34,6 +41,7 @@ extern "C" {
 #endif
 
 #include "vkBuffer.h"
+#include "vkDevice.h"
 
 #include "mat4.h"
 

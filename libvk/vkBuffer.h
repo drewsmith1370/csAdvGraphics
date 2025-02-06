@@ -1,9 +1,10 @@
 #ifndef VKBUFFER
 #define VKBUFFER
 
-#include <vulkan.h>
+#include "CSCIx239Vk.h"
 
-struct Buffer
+struct Buffer;
+typedef struct Buffer
 {
     VkDevice device;
     VkBuffer buffer;
@@ -16,7 +17,7 @@ struct Buffer
     VkBufferUsageFlags usageFlags;
     /** Memory property flags to be filled by external source at buffer creation (to query at some later point) */
     VkMemoryPropertyFlags memoryPropertyFlags;
-};
+} Buffer;
 
 // Create the buffer with initial values
 struct Buffer  CreateBuffer();
