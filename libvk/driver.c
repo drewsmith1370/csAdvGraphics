@@ -6,8 +6,6 @@ VkPhysicalDevice findPhysicalDevice(GLFWwindow* window) {
     VkInstance instance;
     VkSurfaceKHR surface;
     VkPhysicalDevice physicalDevice;
-    // uint32_t presentFamily;
-    // uint32_t graphicsFamily;
     VkSurfaceCapabilitiesKHR capabilities;
     uint32_t formatCount;
     VkSurfaceFormatKHR* formats=NULL;
@@ -76,8 +74,6 @@ VkPhysicalDevice findPhysicalDevice(GLFWwindow* window) {
          if (presentSupport && queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && supportedFeatures.samplerAnisotropy)
          {
             suitable = VK_TRUE;
-            // presentFamily  = i;
-            // graphicsFamily = i;
          }
       }
       free(queueFamilies);
@@ -142,9 +138,16 @@ int main() {
     
     //  Initialize GLFW, GLEW and launch window
     GLFWwindow* window = InitWindow("Drew Smith", 0, 800, 600, NULL, NULL);
+    // Find a physical device
     VkPhysicalDevice physicalDevice = findPhysicalDevice(window);
+    // Create logical device and find related info
     struct Device device = CreateDevice(physicalDevice);
+    // Read out the device
     printf("Found physical device %s\n", device.properties.deviceName);
+    // Read out the supported extensions
+    for (uint32_t i=0;i<device.extensionCount;i++) {
+        printf(" - %s\n", device.supportedExtensions[i].extensionName);
+    }
 
     return 0;
 }
