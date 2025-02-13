@@ -1,6 +1,6 @@
 body {
   padding: 2em;
-  overflow-y: hidden;
+  overflow-y: visible;
   background-color: rgba(100, 200, 255, 128);
   /* background-color: grey; */
 }

@@ -43,9 +43,37 @@ var texture;
 const vertices = new Float32Array([-1, -1, 0, 0, 1, 0, 1, -1, 0]);
 const indices = new Uint32Array([0, 1, 2]);
 // prettier-ignore
-const fishVert = new Float32Array([-1,0,0 , 0,.5,0 , 0,0,.5 , 0,-.5,0 , 0,0,-.5 , .5,0,0 , -.8,0,0 , -1.5,.5,0 , -1.5,-.5,0]);
+const fishVert = new Float32Array([
+  -1.0, 0.0, 0.0 , -1, 0, 0 ,
+   0.0, 0.5, 0.0 ,  0, 1, 0 ,
+   0.0, 0.0, 0.5 ,  0, 0, 1 ,
+   0.0,-0.5, 0.0 ,  0,-1, 0 ,
+   0.0, 0.0,-0.5 ,  0, 0,-1 ,
+   0.5, 0.0, 0.0 ,  1, 0, 0 ,
+  -0.8, 0.0, 0.0 ,  0, 0, 1 ,
+  -1.5, 0.5, 0.0 ,  0, 0, 1 ,
+  -1.5,-0.5, 0.0 ,  0, 0, 1 ,
+]);
 // prettier-ignore
 const fishInd = new Uint32Array([0,1,2 , 0,2,3 , 0,3,4 , 0,4,1 , 1,5,2 , 2,5,3 , 3,5,4 , 4,5,1 , 6,7,8]);
+const vertNrmAttribs = [
+  {
+    name: "aPos",
+    size: 3,
+    type: gl.FLOAT,
+    normalized: false,
+    stride: 24,
+    offset: 0,
+  },
+  {
+    name: "aNrm",
+    size: 3,
+    type: gl.FLOAT,
+    normalized: false,
+    stride: 24,
+    offset: 12,
+  },
+];
 const vertAttribs = [
   {
     name: "aPos",
@@ -70,7 +98,7 @@ window.addEventListener("load", () => {
 
   // Create shaders and objects
   fish.shader = CreateShader(gl, vertSource, fragSource);
-  fish.vao = CreateVao(gl, fishVert, fishInd, fish.shader, vertAttribs);
+  fish.vao = CreateVao(gl, fishVert, fishInd, fish.shader, vertNrmAttribs);
   fish.ubo = CreateUBO(
     gl,
     64,

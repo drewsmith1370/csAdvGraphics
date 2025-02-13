@@ -12,6 +12,7 @@ layout(std140) uniform SpecificUniformBlock {
 };
 
 layout (location=0) in vec3 aPos;
+layout (location=1) in vec3 aNrm;
 
 out vec3 vNrm;
 out vec3 vLdir;
@@ -22,7 +23,7 @@ void main() {
     vec4 pos = uProj * uView * uModel * vec4(aPos,1.0);
     gl_Position = pos;
     // Set normals
-    vNrm = mat3(uProj * uModel) * aPos;
+    vNrm = mat3(uProj * uModel) * aNrm;
     // Set light direction and view vector
     vLdir = uLightDir;
     vView = -vec3(pos);
@@ -53,14 +54,14 @@ vec4 phong()
    if (Id>0.0)
    {
       //  Add diffuse
-      color += Id*vec4(.5,0,0,1);
+      color += Id*vec4(.4,0,0,1);
       //  R is the reflected light vector R = 2(L.N)N - L
       vec3 R = reflect(-L,N);
       //  V is the view vector (eye vector)
       vec3 V = normalize(vView);
       //  Specular is cosine of reflected and view vectors
       float Is = dot(R,V);
-      if (Is>0.0) color += pow(Is,1.0)*vec4(.5,.5,.5,.5);
+      if (Is>0.0) color += pow(Is,10.0)*vec4(.4,.4,.4,1);
    }
 
    //  Return sum of color components
