@@ -107,6 +107,15 @@ export function CreateUBO(gl, size, shaders, name, binding) {
 
   // Bind buffer to binding point
   gl.bindBufferBase(gl.UNIFORM_BUFFER, binding, buffer);
+  return buffer;
+}
+
+//
+// Set data for uniform buffer
+//
+export function SetUBO(gl, ubo, data) {
+  gl.bindBuffer(gl.UNIFORM_BUFFER, ubo);
+  gl.bufferSubData(gl.UNIFORM_BUFFER, 0, data);
 }
 
 export {};

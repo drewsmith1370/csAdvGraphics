@@ -155,6 +155,16 @@ export class mat4 {
     this.translate(-Ex, -Ey, -Ez);
   };
 
+  rotateTowards = (dx, dy, dz, ux, uy, uz) => {
+    var forward = normalize(dx, dy, dz);
+    var right = cross(forward, [ux, uy, uz]);
+    right = normalize(...right);
+    var up = cross(right, forward);
+    // Make matrix
+    var m = [...forward, 0, ...up, 0, ...right, 0, 0, 0, 0, 1];
+    this.multMatrix(m);
+  };
+
   //
   // Compute inverse of a general 3d transformation matrix.
   //    Adapted from graphics gems II.
@@ -191,6 +201,15 @@ export class mat4 {
   getMat = function () {
     return new Float32Array(this.mat);
   };
+
+  PrintMat = () => {
+    var mat = this.getMat();
+    for (let i = 0; i < 4; i++) {
+      console.log(
+        `${mat[i * 4]} ${mat[i * 4 + 1]} ${mat[i * 4 + 2]} ${mat[i * 4 + 3]}`
+      );
+    }
+  };
 }
 
 //
@@ -203,4 +222,16 @@ export function normalize(x, y, z) {
   y /= l;
   z /= l;
   return [x, y, z];
+}
+
+//
+//  Cross Product
+//
+export function cross(a, b) {
+  const result = [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+  return result;
 }

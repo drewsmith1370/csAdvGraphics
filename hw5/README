@@ -1,0 +1,9 @@
+# Homework 5: WebGL
+
+Made by Drew Smith.
+The goal of this program is to allow the WebGL canvas to display objects in front of or behind elements in the page.
+Although the WebGL canvas is not able to perform this independantly of the browser content (It would create security
+risks to be able to load in the webpage content as a texture), telling the WebGL instance to search the DOM for certain
+style families that have z-info about each element could be a viable method of controlling this.
+
+Time to complete: ~10 hours
