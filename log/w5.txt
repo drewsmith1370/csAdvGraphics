@@ -1,0 +1,13 @@
+# Homework 5 review
+
+I am quite proud of my little program; while it isn't much to look at, the solutions I found were pretty elegant
+and I think they will scale up nicely. This could also be a fun final project if I decide it to be. However, while
+it was a fun experiment, I don't know how much I could learn from a final project like that. Overall, I think I
+earned an A- for that homework.
+
+
+# Homework 6 goals (Image Processing)
+
+I really don't have much time this week, and Thursday is my birthday, so I think I will go somewhat light
+compared to what I have been doing and only go for a B. I want to implement screen-space ambient occlusion into a
+scene. Additionally, if I have time, I will look into color correction and potentially bloom and blur features.

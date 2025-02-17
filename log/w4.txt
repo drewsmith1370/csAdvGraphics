@@ -1,0 +1,14 @@
+# Homework 4 review
+
+Vulkan was hard... Really hard. While I didn't accomplish much that you could look at, I spent a 
+long time writing code and an even longer time reading about Vulkan. I think all in all, I deserve 
+an A for my work. I think Vulkan would make for a fun final project, and I definitely want to continue
+writing with it regardless because I think it has a lot to teach you about how a GPU actually works.
+
+# Homework 5 goals (ES)
+
+For homework 5, I want to explore the parts of WebGL that my job doesn't really let me. I want to see how
+it could do something interactive and fun with a webpage, like display as if the page itself is contained
+in the scene. My thought is to be able to steal the page components as a texture or somehow be able to render
+the scene around the components to make an interactive website with 3D graphics, perhaps as a resume site one
+day.  
