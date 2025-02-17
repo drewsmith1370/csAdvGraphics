@@ -1,0 +1,39 @@
+# Homework 3: Performance of vertex data locality
+
+Made by Drew Smith. The goal of this program is to compare the performance of using local vs nonlocal vertex data.
+
+This program has two types of rudimentary VAO object loader alongside Vlakkies display list loader:
+
+- The first creates a VAO where the normals are local to each vertex
+- The second creates a VAO where the normals are all placed after the vertices
+
+Key bindings:
+
+- Space : Pause/Unpause
+- m : Toggle loader mode
+- o : Change objects
+- arrows : Look around
+- =, - : Zoom in, out
+- 0 : Reset view angle
+- ESC : Exit
+
+## Findings
+
+School laptop with Intel Core i3 / Integrated graphics:
+
+- 1000 FPS for Localized VAO T-Rex
+- 600 FPS for Nonlocalized VAO T-Rex
+- 70 FPS for Display list T-Rex
+- 5000 FPS for basic cube
+
+PC with AMD 7800X GPU:
+
+- 5600 FPS for Localized VAO T-Rex
+- 5500 FPS for Nonlocalized VAO T-Rex
+- 300 FPS for Display list T-Rex
+- 23000 FPS for basic cube
+
+Notably, the AMD drivers for display lists didn't seem to work, and kept making the program seg fault before the framerate settled.
+Also, the object loader is much faster on the intel system, probably because of how I did the buffer writes and the close proximity of the integrated graphics.
+
+Time to complete: ~10 hours, mainly debugging the dang object loader.
