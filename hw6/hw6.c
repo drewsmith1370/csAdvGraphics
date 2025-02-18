@@ -5,15 +5,20 @@
 char keys[256] = {0};
 int ua = 0, da = 0, la = 0, ra = 0;
 // View
-float th = 30;
+float th = 180;
 float ph = 30;
 float fov = 59;
 float dim = 2;
 float asp = 1;
 // Misc
+GLFWwindow* window=NULL;
 int shader[1] = {0};
+int filter[1] = {0};
 float lightPosition[3] = {0,1.5,-3};
-char* text[4] = {"Localized VAO","Nonlocal VAO","Display Lists","Cube VAO"};
+int filterMode = 0;
+unsigned int fbuf[2]={0};
+unsigned int ftex[2]={0};
+unsigned int zbuf=0;
 // Matrices
 unsigned int lightLoc = 0;
 // Time
@@ -22,11 +27,10 @@ double prevTime = 0;
 double deltaTime = 0;
 int paused = 0;
 // Objects
-int loaderMode = 0;
-unsigned int objects[2] = {0};
+int lighting = 1;
+unsigned int objects[3] = {0};
 unsigned int nonlocal = 0;
 int objIndices = 0;
-int lists[1] = {0};
 
 typedef struct Vertex {
 	float Pos[3];
@@ -89,10 +93,10 @@ GLuint CubeIndices[] = {
 };
 
 struct Vertex SurfaceVertices[] = {
-	{.Pos={-5,0, 5}, .Nrm={ 0, 1, 0}, .Tex={0,0}, .Col={ 0,.5, 1}}, // 20
-	{.Pos={-5,0,-5}, .Nrm={ 0, 1, 0}, .Tex={0,1}, .Col={ 0,.5, 1}}, // 21
-	{.Pos={ 5,0,-5}, .Nrm={ 0, 1, 0}, .Tex={1,1}, .Col={ 0,.5, 1}}, // 22
-	{.Pos={ 5,0, 5}, .Nrm={ 0, 1, 0}, .Tex={1,0}, .Col={ 0,.5, 1}}
+	{.Pos={-10,0, 10}, .Nrm={ 0, 1, 0}, .Tex={0,0}, .Col={ 0,.5, 1}}, // 20
+	{.Pos={-10,0,-10}, .Nrm={ 0, 1, 0}, .Tex={0,1}, .Col={ 0,.5, 1}}, // 21
+	{.Pos={ 10,0,-10}, .Nrm={ 0, 1, 0}, .Tex={1,1}, .Col={ 0,.5, 1}}, // 22
+	{.Pos={ 10,0, 10}, .Nrm={ 0, 1, 0}, .Tex={1,0}, .Col={ 0,.5, 1}}
 };
 
 GLuint SurfIndices[] = {
@@ -106,8 +110,52 @@ void DisplayObject(unsigned int vao, int n, int texture) {
 	ErrCheck("object");
 }
 
+void useFilter() {
+	//  Enable shader
+      glUseProgram(filter[filterMode]);
+      //  Set screen resolution uniforms
+    //   int id,width,height;
+    //   glfwGetWindowSize(window,&width,&height);
+    //   id = glGetUniformLocation(filter[filterMode],"dX");
+    //   glUniform1f(id,1.0/width);
+    //   id = glGetUniformLocation(filter[filterMode],"dY");
+    //   glUniform1f(id,1.0/height);
+      //  Identity projection
+      glMatrixMode(GL_PROJECTION);
+      glLoadIdentity();
+      glMatrixMode(GL_MODELVIEW);
+      glLoadIdentity();
+      //  Disable depth test & Enable textures
+      glDisable(GL_DEPTH_TEST);
+      glEnable(GL_TEXTURE_2D);
+      //  Copy entire screen
+	  int N=1;
+      for (int i=0;i<N;i++)
+      {
+         //  Output to alternate framebuffers
+         //  Final output is to screen
+         glBindFramebuffer(GL_FRAMEBUFFER,i==N-1?0:fbuf[(i+1)%2]);
+         //  Clear the screen
+         glClear(GL_COLOR_BUFFER_BIT);
+         //  Input image is from the last framebuffer
+         glBindTexture(GL_TEXTURE_2D,ftex[i%2]);
+         //  Redraw the screen
+         glBegin(GL_QUADS);
+         glTexCoord2f(0,0); glVertex2f(-1,-1);
+         glTexCoord2f(0,1); glVertex2f(-1,+1);
+         glTexCoord2f(1,1); glVertex2f(+1,+1);
+         glTexCoord2f(1,0); glVertex2f(+1,-1);
+         glEnd();
+      }
+      //  Disable textures and shaders
+      glDisable(GL_TEXTURE_2D);
+      glUseProgram(0);
+	  ErrCheck("filter");
+}
+
 // Render and swap buffers
 void display(GLFWwindow* window) {
+	glBindFramebuffer(GL_FRAMEBUFFER,fbuf[0]);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	View(th,ph,fov,dim);
@@ -116,37 +164,47 @@ void display(GLFWwindow* window) {
 	lightPosition[1] = 1.5;
 	lightPosition[2] = 3*Sin(progTime*100);
 
-	Lighting(lightPosition[0],lightPosition[1],lightPosition[2],0,0,0);
-
-	//  Enable shader
-	glUseProgram(shader[0]);
+	if (lighting) {
+		Lighting(lightPosition[0],lightPosition[1],lightPosition[2],0,0,0);
+		//  Enable shader
+		glUseProgram(shader[0]);
+	}
+	else {
+		glDisable(GL_LIGHT0);
+	}
 	
 	//  Draw scene
-	if (loaderMode == 3) {
-		DisplayObject(objects[1],35,0);
-	}
-	else if (loaderMode == 2) 
-	{
-		glUseProgram(shader[1]);
-		glCallList(lists[0]);
-	}
-	else if (loaderMode == 1) {
-		DisplayObject(nonlocal,objIndices,0);
-	}
-	else
-	{
-		DisplayObject(objects[0],objIndices,0);
-	}
+	// Tyra
+	glPushMatrix();
+	glTranslatef(3,0,3);
+	glRotated(90,0,1,0);
+	DisplayObject(objects[0],objIndices,0);
+	glPopMatrix();
+
+	// Cube
+	glPushMatrix();
+	glTranslatef(-3,0,3);
+	glRotated(45,0,1,0);
+	DisplayObject(objects[1],35,0); 
+	glPopMatrix();
+
+	// Floor
+	glPushMatrix();
+	glTranslatef(0,-1.3,0);
+	DisplayObject(objects[2],6,0); 
+	glPopMatrix();
+
+	ErrCheck("scene");
+
+	useFilter();
+
 	//  Revert to fixed pipeline
 	glUseProgram(0);
 	glDisable(GL_LIGHTING);
-
-	//  Display axes
-	Axes(2);
 	//  Display parameters
 	SetColor(1,1,1);
 	glWindowPos2i(5,5);
-	Print("FPS:%d Mode:%s",FramesPerSecond(),text[loaderMode]);
+	Print("FPS:%d",FramesPerSecond());
 	//  Render the scene and make it visible
 	ErrCheck("display");
 	glFlush();
@@ -163,6 +221,45 @@ void reshape(GLFWwindow* window, int width, int height) {
    glViewport(0,0, width,height);
    //  Set projection
    Projection(fov,asp,dim);
+
+   //
+   //  Allocate a frame buffer
+   //  Typically the same size as the screen (W,H) but can be larger or smaller
+   //
+   //  Delete old frame buffer, depth buffer and texture
+   if (zbuf)
+   {
+      glDeleteRenderbuffers(1,&zbuf);
+      glDeleteTextures(2,ftex);
+      glDeleteFramebuffers(2,fbuf);
+   }
+   //  Allocate two textures, two frame buffer objects and a depth buffer
+   glGenFramebuffers(2,fbuf);   
+   glGenTextures(2,ftex);
+   glGenRenderbuffers(1,&zbuf);   
+   //  Allocate and size texture
+   for (int k=0;k<2;k++)
+   {
+      glBindTexture(GL_TEXTURE_2D,ftex[k]);
+      glTexImage2D(GL_TEXTURE_2D,0,3,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,NULL);
+      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+      //  Bind frame buffer to texture
+      glBindFramebuffer(GL_FRAMEBUFFER,fbuf[k]);
+      glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,ftex[k],0);
+      //  Bind depth buffer to frame buffer 0
+      if (k==0)
+      {
+         glBindRenderbuffer(GL_RENDERBUFFER,zbuf);
+         glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_COMPONENT24,width,height);
+         glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,zbuf);
+      }
+   }
+   //  Switch back to regular display buffer
+   glBindFramebuffer(GL_FRAMEBUFFER,0);
+   ErrCheck("Framebuffer");
 }
 
 // Update time variables each frame
@@ -188,8 +285,7 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods) {
 			th = ph = 0;
 		//  Switch shaders
 		else if (key==GLFW_KEY_M) {
-			loaderMode++;
-			loaderMode%=4;
+
 		}
 		//  PageUp key - increase dim
 		else if (key==GLFW_KEY_MINUS) {
@@ -202,6 +298,10 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods) {
 		// Spacee - pause
 		else if (key==GLFW_KEY_SPACE && dim>1) {
 			paused = !paused;
+		}
+		// l - lighting
+		else if (key==GLFW_KEY_L) {
+			lighting = !lighting;
 		}
     }
     else if (action == GLFW_RELEASE) {
@@ -279,16 +379,15 @@ int CreateObject(int shader, int vsize, void* vdata, int isize, void* idata) {
 
 int main(int argc, char** argv) {
 	// Init
-	GLFWwindow* window = InitWindow("Drew Smith", 0, 800,600 , reshape, key);
+	window = InitWindow("Drew Smith", 0, 800,600 , reshape, key);
 
 	// Shaders
 	shader[0] = CreateShaderProg("light.vert","light.frag");
-	shader[1] = CreateShaderProg("pixel.vert","phong.frag");
+	filter[0] = CreateShaderProg(NULL,"depth.frag");
 	// Objects
-	lists[0] = LoadOBJ("tyra.obj");
-	objects[1] = CreateObject(shader[0],sizeof(CubeVertices),CubeVertices,sizeof(CubeIndices),CubeIndices);
-	objIndices = ObjToVao(&objects[0],"tyra.obj",shader[0]);
-	ObjToVaoNonlocal(&nonlocal,"tyra.obj",shader[0]);
+	objIndices = ObjToVao(&objects[0],"tyra.obj",shader[0]); // Tyra
+	objects[1] = CreateObject(shader[0],sizeof(CubeVertices),CubeVertices,sizeof(CubeIndices),CubeIndices); // Cube
+	objects[2] = CreateObject(shader[0],sizeof(SurfaceVertices),SurfaceVertices,sizeof(SurfIndices),SurfIndices); // Floor
 	ErrCheck("init");
 
 	// Main loop
