@@ -9,7 +9,7 @@ in vec3 vCol;
 out vec4 FragColor;
 
 // Make these Uniforms later ig, but it would be best to make more organized objects in main first
-const float Ambient = .1;
+const float Ambient = .7;
 const float Diffuse = .6;
 const float Spectral = .8;
 

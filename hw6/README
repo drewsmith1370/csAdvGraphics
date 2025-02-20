@@ -1,39 +1,21 @@
-# Homework 3: Performance of vertex data locality
+# Homework 6: Image Processing
 
-Made by Drew Smith. The goal of this program is to compare the performance of using local vs nonlocal vertex data.
-
-This program has two types of rudimentary VAO object loader alongside Vlakkies display list loader:
-
-- The first creates a VAO where the normals are local to each vertex
-- The second creates a VAO where the normals are all placed after the vertices
+CSCI 4239
+Made by Drew Smith. The goal of this program is to explore pure-depth screenspace ambient occlusion (SSAO)
+as a postprocessing technique. The technique technically only needs depth data to operate on, which is how it is
+implemented here, but benefits from a texture containing normals as well. The result is quite noisy due to the
+random nature of the algorithm, but could be improved through a low-pass filter (shown with the blur filter from
+Vlakkies, but better would be to do this separately from image data or follow-up with sharpening).
 
 Key bindings:
 
 - Space : Pause/Unpause
-- m : Toggle loader mode
-- o : Change objects
 - arrows : Look around
+- m : Toggle filter mode
+- l: Toggle lighting off/on
+- b: Toggle blur on/off
 - =, - : Zoom in, out
 - 0 : Reset view angle
 - ESC : Exit
 
-## Findings
-
-School laptop with Intel Core i3 / Integrated graphics:
-
-- 1000 FPS for Localized VAO T-Rex
-- 600 FPS for Nonlocalized VAO T-Rex
-- 70 FPS for Display list T-Rex
-- 5000 FPS for basic cube
-
-PC with AMD 7800X GPU:
-
-- 5600 FPS for Localized VAO T-Rex
-- 5500 FPS for Nonlocalized VAO T-Rex
-- 300 FPS for Display list T-Rex
-- 23000 FPS for basic cube
-
-Notably, the AMD drivers for display lists didn't seem to work, and kept making the program seg fault before the framerate settled.
-Also, the object loader is much faster on the intel system, probably because of how I did the buffer writes and the close proximity of the integrated graphics.
-
-Time to complete: ~10 hours, mainly debugging the dang object loader.
+Time to complete: ~8 hours.
