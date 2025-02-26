@@ -169,3 +169,16 @@ int CreateShaderGeom(const char* vert,const char* geom,const char* frag)
    return prog;
 }
 
+//
+// Create Compute Shader Program
+//
+int CreateComputeProg(char* CompFile)
+{
+   int prog = glCreateProgram();
+   CreateShader(prog, GL_COMPUTE_SHADER, CompFile);
+
+   glLinkProgram(prog);
+   PrintProgramLog(prog);
+   
+   return prog;
+}
