@@ -57,6 +57,10 @@ void display(GLFWwindow* window) {
 
 	// Computes
 	// Dispatch density solver
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D,texture[1]);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D,texture[0]);
 	glUseProgram(shader[1]);
 	glDispatchCompute(16, 16, 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -266,6 +270,7 @@ int main(int argc, char** argv) {
 	glGenTextures(2, texture);
 
 	// Divergence texture
+	glActiveTexture(GL_TEXTURE1); // Activate texture unit 1
 	glBindTexture(GL_TEXTURE_2D, texture[1]);
 	// Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -273,15 +278,15 @@ int main(int argc, char** argv) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	// Allocate size
-	float dat2[512*512*1] = {0};
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 512, 512, 0, GL_RED, GL_UNSIGNED_BYTE, dat2);
-	// glGenerateMipmap(GL_TEXTURE_2D);
+	float dat2[512*512*1] = {1};
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 512, 512, 0, GL_RED, GL_FLOAT, dat2);
+	glGenerateMipmap(GL_TEXTURE_2D);
 	// Bind to texture 1
-	glActiveTexture(GL_TEXTURE1); // Activate texture unit 1
 	glBindImageTexture(1, texture[1], 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 	ErrCheck("Texture 2");
 
 	// Velocity, density texture
+	glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
 	glBindTexture(GL_TEXTURE_2D, texture[0]);
 	// Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -293,18 +298,22 @@ int main(int argc, char** argv) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, dat);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	// Bind to texture 0
-	glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
 	glBindImageTexture(0, texture[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 	ErrCheck("Texture 1");
 
 	// Set the textures to the correct binding
-	glBindTexture(GL_TEXTURE_2D,texture[0]);
+	// glBindTexture(GL_TEXTURE_2D,texture[0]);
 	glUseProgram(shader[0]);
 	GLuint loc = glGetUniformLocation(shader[0], "FluidTex");
 	glUniform1i(loc, 0);
+	loc = glGetUniformLocation(shader[0], "DivTex");
+	glUniform1i(loc, 1);
+	
 	glUseProgram(shader[1]);
 	loc = glGetUniformLocation(shader[1], "FluidTex");
 	glUniform1i(loc, 0);
+	loc = glGetUniformLocation(shader[1], "DivTex");
+	glUniform1i(loc, 1);
 	ErrCheck("Texture Uniforms");
 
 	// Objects

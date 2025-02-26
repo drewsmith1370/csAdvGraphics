@@ -12,16 +12,21 @@ layout (rgba32f, binding=0) uniform image2D FluidTex;
 layout (r32f, binding=1) uniform image2D DivTex;
 
 // const float grav = 0.98;
-const float diffuse_rate = .1;
-const float advect_rate  = 200;
+const float diffuse_rate = .001;
+const float advect_rate  = 2;
 
 vec4 getFluidInfo(ivec2 texel) {
     return imageLoad(FluidTex, texel);
 }
 
 ivec2 wrapEdges(ivec2 v) {
-    v.x = int(mod(v.x, 512.0));
-    v.y = int(mod(v.y, 512.0));
+    // v.x = int(mod(v.x, 512.0));
+    // v.y = int(mod(v.y, 512.0));
+
+    if (v.x < 0) v.x = 0;
+    if (v.x > 511) v.x = 511;
+    if (v.y < 0) v.y = 0;
+    if (v.y > 511) v.y = 511;
     return v;
 }
 
@@ -29,7 +34,7 @@ vec4 addSources(vec4 info, ivec2 texel) {
     vec2 dif = mozUbo.mozCoord - vec2(texel) / 512.0;
     float dst = dif.x*dif.x + dif.y*dif.y;
     if (dst < .00001) {
-        info.xy = vec2(dif.y,-dif.x);
+        info.xy = vec2(-1,0);
     }
 
     return info;
@@ -38,19 +43,46 @@ vec4 addSources(vec4 info, ivec2 texel) {
 vec4 diffusion(vec4 fluidInfo, ivec2 texel) {
     // Every frame swap densities with surrounding neighbors
     float dif = diffuse_rate * mozUbo.deltaTime;
-    vec3 vel = fluidInfo.xyz;
     // Take neighboring texels
     ivec2 up   = wrapEdges(texel + ivec2(  0,  1));
     ivec2 down = wrapEdges(texel + ivec2(  0, -1));
     ivec2 left = wrapEdges(texel + ivec2( -1,  0));
     ivec2 rght = wrapEdges(texel + ivec2(  1,  0));
 
-    vec2 newVelocity = fluidInfo.xy + dif * (getFluidInfo(left).xy + 
+    vec2 newVelocity = fluidInfo.xy + .5 * dif * (getFluidInfo(left).xy + 
                                             getFluidInfo(down).xy +
                                             getFluidInfo(  up).xy +
                                             getFluidInfo(rght).xy - 4*fluidInfo.a);
 
     return vec4(newVelocity,fluidInfo.ba);
+}
+
+// Solve advection backwards (what points density value will end up in this one?)
+vec4 advection(vec4 fluidInfo, ivec2 texel) {
+    // Use velocity to travel backwards
+    vec2 advCoord = vec2(texel) - fluidInfo.xy * mozUbo.deltaTime * advect_rate;
+    // find the surrounding coordinates
+    vec2 intPart=vec2(0);
+    vec2 interpHi = modf(advCoord, intPart);
+    ivec2 bl = ivec2(intPart);
+    ivec2 br = ivec2(bl.x+1,bl.y  );
+    ivec2 ul = ivec2(bl.x  ,bl.y+1);
+    ivec2 ur = ivec2(bl.x+1,bl.y+1);
+    bl = wrapEdges(bl);
+    br = wrapEdges(br);
+    ul = wrapEdges(ul);
+    ur = wrapEdges(ur);
+    // Fractional part used for interpolating between the texel values
+    // interpHi = fract(advCoord);
+    vec2 interpLo = 1 - interpHi;
+    // Sample the points surrounding the actual point and interpolate for new value
+    vec2 newVal = getFluidInfo(bl).xy * interpLo.x*interpLo.y +
+                   getFluidInfo(br).xy * interpHi.x*interpLo.y +
+                   getFluidInfo(ul).xy * interpLo.x*interpHi.y +
+                   getFluidInfo(ur).xy * interpHi.x*interpHi.y;
+
+    fluidInfo.xy = newVal;
+    return fluidInfo;
 }
 
 // Use Helmholtz decomposition and keep the conservative component of the vector field (remove divergence)
@@ -66,16 +98,18 @@ vec4 helmholtzDecomp(vec4 fluidInfo, ivec2 texel) {
     ivec2 rght = wrapEdges(texel + ivec2(  1,  0));
 
     // Calculate the divergence
-    float h = 1/512;
+    float h = 1;//512;
     float divergence = h * .5 * (getFluidInfo(rght).x - getFluidInfo(left).x +
                              getFluidInfo(up).y - getFluidInfo(down).y);
-    imageStore(DivTex, texel, vec4(divergence));
     barrier();
+    imageStore(DivTex, texel, vec4(1,0,0,0));//vec4(divergence));
 
     // Use the divergence to find the gradient field
     vec2 grad = vec2(imageLoad(DivTex, rght).x - imageLoad(DivTex, left).x, imageLoad(DivTex, up).y - imageLoad(DivTex, down).y) * .5 / h;
     // Subtract the conservative part from the gradient field to get the curl (incompressible)
+    fluidInfo.xy -= grad;
 
+    imageStore(FluidTex, texel, fluidInfo);
 
     return fluidInfo;
 }
@@ -89,12 +123,12 @@ void main() {
     vec4 fluidInfo = getFluidInfo(texelCoord);
 
     // Add source
-    // if (mozUbo.click) fluidInfo = addSources(fluidInfo, texelCoord);
+    if (mozUbo.click) fluidInfo = addSources(fluidInfo, texelCoord);
     // Diffusion
     // fluidInfo = diffusion(fluidInfo, texelCoord);
+    // fluidInfo = helmholtzDecomp(fluidInfo, texelCoord);
     // Advection
     // fluidInfo = advection(fluidInfo, texelCoord);
-    // Store new values
     // fluidInfo = helmholtzDecomp(fluidInfo, texelCoord);
 
     barrier();
