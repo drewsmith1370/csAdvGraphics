@@ -14,5 +14,7 @@ void main() {
     float dist2 = dif.x*dif.x + dif.y*dif.y;
 
     vec4 col = texture(FluidTex,vTex);
-    FragColor = col.rgaa;
+    col.rg = col.rg * .5 + .5;
+    // FragColor = col.rrrr;
+    FragColor = col.aaaa;
 }

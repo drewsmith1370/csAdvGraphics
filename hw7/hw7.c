@@ -12,9 +12,9 @@ float asp = 1;
 // Misc
 GLFWwindow* window=NULL;
 int width=800, height=600;
-int shader[2] = {0};
+int shader[3] = {0};
 GLuint fbuf[2] = {0};
-GLuint texture = 0;
+GLuint texture[2] = {0};
 GLuint mozUbo = 0;
 float mx=0, my=0;
 // Time
@@ -55,8 +55,13 @@ void display(GLFWwindow* window) {
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
-	// Compute
+	// Computes
+	// Dispatch density solver
 	glUseProgram(shader[1]);
+	glDispatchCompute(16, 16, 1);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	// Dispatch velocity solver
+	glUseProgram(shader[2]);
 	glDispatchCompute(16, 16, 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	
@@ -238,7 +243,8 @@ int main(int argc, char** argv) {
 
 	// Shaders
 	shader[0] = CreateShaderProg("fluid.vert","fluid.frag");
-	shader[1] = CreateComputeProg("fluid.glsl");
+	shader[1] = CreateComputeProg("densitySolver.comp");
+	shader[2] = CreateComputeProg("velocitySolver.comp");
 
 	// Create UBO
 	glGenBuffers(1,&mozUbo);
@@ -256,9 +262,27 @@ int main(int argc, char** argv) {
 	GLuint blockIndex = glGetUniformBlockIndex(shader[0], "MouseUniformBuffer");
 	glUniformBlockBinding(shader[0], blockIndex, bindingPoint);
 
-	// Create Texture
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	// Create Textures
+	glGenTextures(2, texture);
+
+	// Divergence texture
+	glBindTexture(GL_TEXTURE_2D, texture[1]);
+	// Set texture parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// Allocate size
+	float dat2[512*512*1] = {0};
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 512, 512, 0, GL_RED, GL_UNSIGNED_BYTE, dat2);
+	// glGenerateMipmap(GL_TEXTURE_2D);
+	// Bind to texture 1
+	glActiveTexture(GL_TEXTURE1); // Activate texture unit 1
+	glBindImageTexture(1, texture[1], 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
+	ErrCheck("Texture 2");
+
+	// Velocity, density texture
+	glBindTexture(GL_TEXTURE_2D, texture[0]);
 	// Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -270,15 +294,18 @@ int main(int argc, char** argv) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 	// Bind to texture 0
 	glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
-	glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	// Set the texture to the correct binding
+	glBindImageTexture(0, texture[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+	ErrCheck("Texture 1");
+
+	// Set the textures to the correct binding
+	glBindTexture(GL_TEXTURE_2D,texture[0]);
 	glUseProgram(shader[0]);
 	GLuint loc = glGetUniformLocation(shader[0], "FluidTex");
 	glUniform1i(loc, 0);
 	glUseProgram(shader[1]);
 	loc = glGetUniformLocation(shader[1], "FluidTex");
 	glUniform1i(loc, 0);
+	ErrCheck("Texture Uniforms");
 
 	// Objects
 	objects[0] = CreateObject(shader[0],sizeof(SurfaceVertices),SurfaceVertices,sizeof(SurfIndices),SurfIndices); // Draw surface
