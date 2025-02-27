@@ -11,7 +11,7 @@ float asp = 1;
 // Misc
 GLFWwindow* window=NULL;
 int width=800, height=600;
-int shader[3] = {0};
+int shader[2] = {0};
 GLuint fbuf[2] = {0};
 GLuint texture[2] = {0};
 GLuint mozUbo = 0;
@@ -142,16 +142,8 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods) {
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         setTo = 1;
 
-		//  PageUp key - increase dim
-		if (key==GLFW_KEY_MINUS) {
-			dim += 0.1;
-		}
-		//  PageDown key - decrease dim
-		else if (key==GLFW_KEY_EQUAL && dim>1) {
-			dim -= 0.1;
-		}
 		// Spacee - pause
-		else if (key==GLFW_KEY_SPACE) {
+		if (key==GLFW_KEY_SPACE) {
 			src = !src;
 			glBufferSubData(GL_UNIFORM_BUFFER,offsetof(MouseUniformBuffer,source),sizeof(int),&src);
 		}
@@ -264,7 +256,6 @@ int main(int argc, char** argv) {
 	// Shaders
 	shader[0] = CreateShaderProg("fluid.vert","fluid.frag");
 	shader[1] = CreateComputeProg("densitySolver.comp");
-	shader[2] = CreateComputeProg("velocitySolver.comp");
 
 	// Create UBO
 	glGenBuffers(1,&mozUbo);

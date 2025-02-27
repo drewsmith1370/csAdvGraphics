@@ -1,0 +1,18 @@
+# Homework 7: Textures
+
+CSCI 4239
+Made by Drew Smith. This is a very simple grid-based solver from a paper by Jos Stam.
+Paper can be found at http://www.dgp.toronto.edu/people/stam/reality/Research/pdf/GDC03.pdf
+It uses a combination of explicit and implicit techniques with performance and stability as a priority.
+
+I ran out of time to make it even more interactive, but feel free to change the values in the compute shader to see their affect on the simulation.
+Due to the implicit nature, it should (Hopefully!) not blow up. If it does, it's probably trying to pull advection from behind a wall or something.
+
+Key bindings:
+
+- Mouse: Click and drag to add a source of density. It will also add velocity that follows your mouse.
+- Space : Toggle source at left wall
+- 0 : Reset fluid texture
+- ESC : Exit
+
+Time to complete: ~12 hours? It was really fun so I lost track
