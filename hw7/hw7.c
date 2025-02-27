@@ -1,5 +1,4 @@
 #include "CSCIx239.h"
-#include <stdbool.h>
 
 #define NUM_FILTERS 3
 
@@ -17,6 +16,7 @@ GLuint fbuf[2] = {0};
 GLuint texture[2] = {0};
 GLuint mozUbo = 0;
 float mx=0, my=0;
+int src=0;
 // Time
 double progTime = 0;
 double prevTime = 0;
@@ -34,8 +34,10 @@ typedef struct Vertex {
 // UBO
 typedef struct MouseUniformBuffer {
 	float mozCoord[2];
+	float mozVel[2];
 	float deltaTime;
-	bool click;
+	int click;
+	int source;
 } MouseUniformBuffer;
 
 struct Vertex SurfaceVertices[] = {
@@ -49,11 +51,29 @@ GLuint SurfIndices[] = {
 	0,1,3 , 3,1,2
 };
 
+void updateMouseCoord(double newMozX, double newMozY, int width, int height) {
+	double currentX = newMozX / width;
+	double currentY = 1 - newMozY / height;
+	double dx = currentX - mx;
+	double dy = currentY - my;
+	mx = currentX;
+	my = currentY;
+
+	float mubo[4] = {currentX, currentY, dx, dy};
+	glBindBuffer(GL_UNIFORM_BUFFER,mozUbo);
+	glBufferSubData(GL_UNIFORM_BUFFER,offsetof(MouseUniformBuffer,mozCoord),sizeof(float[4]),&mubo);
+	return;
+}
+
 // Render and swap buffers
 void display(GLFWwindow* window) {
 	glBindFramebuffer(GL_FRAMEBUFFER,fbuf[0]);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+
+	double xpos,ypos;
+	glfwGetCursorPos(window,&xpos,&ypos);
+	updateMouseCoord(xpos,ypos,width,height);
 
 	// Computes
 	// Dispatch density solver
@@ -64,10 +84,10 @@ void display(GLFWwindow* window) {
 	glUseProgram(shader[1]);
 	glDispatchCompute(16, 16, 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-	// Dispatch velocity solver
-	glUseProgram(shader[2]);
-	glDispatchCompute(16, 16, 1);
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	// // Dispatch velocity solver
+	// glUseProgram(shader[2]);
+	// glDispatchCompute(16, 16, 1);
+	// glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	
 	//  Draw scene
 	glUseProgram(shader[0]);
@@ -84,16 +104,6 @@ void display(GLFWwindow* window) {
 	ErrCheck("display");
 	glFlush();
 	glfwSwapBuffers(window);
-}
-
-void updateMouseCoord(double newMozX, double newMozY, int width, int height) {
-	mx = newMozX / width;
-	my = 1 - newMozY / height;
-
-	float mubo[2] = {mx,my};
-	glBindBuffer(GL_UNIFORM_BUFFER,mozUbo);
-	glBufferSubData(GL_UNIFORM_BUFFER,offsetof(MouseUniformBuffer,mozCoord),sizeof(float[2]),&mubo);
-	return;
 }
 
 // Reshape callback
@@ -141,8 +151,14 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods) {
 			dim -= 0.1;
 		}
 		// Spacee - pause
-		else if (key==GLFW_KEY_SPACE && dim>1) {
-			paused = !paused;
+		else if (key==GLFW_KEY_SPACE) {
+			src = !src;
+			glBufferSubData(GL_UNIFORM_BUFFER,offsetof(MouseUniformBuffer,source),sizeof(int),&src);
+		}
+		else if (key==GLFW_KEY_0) {
+			// glActiveTexture(GL_TEXTURE0);
+			glClearTexImage(texture[0], 0, GL_RGBA, GL_FLOAT, NULL);
+
 		}
     }
     else if (action == GLFW_RELEASE) {
@@ -183,12 +199,12 @@ void handleInputs() {
 
 void mouseClickCallback(GLFWwindow* window, int button, int action, int mods) {
 	if (action == GLFW_PRESS) {
-		bool clickVal = true;
-		glBufferSubData(GL_UNIFORM_BUFFER,offsetof(MouseUniformBuffer,click),sizeof(bool),&clickVal);
+		int clickVal = 1;
+		glBufferSubData(GL_UNIFORM_BUFFER,offsetof(MouseUniformBuffer,click),sizeof(int),&clickVal);
 	}
 	else if (action == GLFW_RELEASE) {
-		bool clickVal = false;
-		glBufferSubData(GL_UNIFORM_BUFFER,offsetof(MouseUniformBuffer,click),sizeof(bool),&clickVal);
+		int clickVal = 0;
+		glBufferSubData(GL_UNIFORM_BUFFER,offsetof(MouseUniformBuffer,click),sizeof(int),&clickVal);
 	}
 }
 
@@ -242,7 +258,7 @@ int CreateObject(int shader, int vsize, void* vdata, int isize, void* idata) {
 int main(int argc, char** argv) {
 	// Init
 	window = InitWindow("Drew Smith", 0, width, height , reshape, key);
-	glfwSetCursorPosCallback(window, updateCursorPosition);
+	// glfwSetCursorPosCallback(window, updateCursorPosition);
 	glfwSetMouseButtonCallback(window, mouseClickCallback);
 
 	// Shaders
@@ -255,8 +271,10 @@ int main(int argc, char** argv) {
 	glBindBuffer(GL_UNIFORM_BUFFER,mozUbo);
 	struct MouseUniformBuffer mubo = {
 		.mozCoord={mx,my},
+		.mozVel={0},
 		.deltaTime=0,
-		.click = false,
+		.click = 0,
+		.source = 0,
 	};
 	glBufferData(GL_UNIFORM_BUFFER,sizeof(MouseUniformBuffer),&mubo,GL_DYNAMIC_DRAW);
 	// Bind UBO to binding point 

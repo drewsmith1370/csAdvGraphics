@@ -12,8 +12,8 @@ layout (rgba32f, binding=0) uniform image2D FluidTex;
 layout (r32f, binding=1) uniform image2D DivTex;
 
 // const float grav = 0.98;
-const float diffuse_rate = .001;
-const float advect_rate  = 2;
+const float diffuse_rate = 10;
+const float advect_rate  = 20;
 
 vec4 getFluidInfo(ivec2 texel) {
     return imageLoad(FluidTex, texel);

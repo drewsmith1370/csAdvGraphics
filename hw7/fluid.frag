@@ -16,7 +16,6 @@ void main() {
 
     // vec4 col = texture(DivTex, vTex).rrrr;
     vec4 col = texture(FluidTex,vTex);
-    col.rg = col.rg * .5 + .5;
-    // FragColor = col.aaaa;
-    FragColor = col.rgba;
+    FragColor = 4*col.graa + 20*vec4(abs(col.rg),0,0);
+    // FragColor = col.rgaa;
 }
